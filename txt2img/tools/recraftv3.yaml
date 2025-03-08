@@ -1,0 +1,111 @@
+description:
+  human:
+    en_US: Recraftv3 is an advanced text-to-image tool
+    zh_Hans: Recraftv3 是先进的文本到图像工具
+  llm: Recraftv3 generates high-quality images from text descriptions
+extra:
+  python:
+    source: tools/recraftv3.py
+identity:
+  author: langgenius
+  description:
+    en_US:
+      RecraftV3 offers enhanced image generation capabilities with multiple model variants,
+      supporting various aspect ratios and resolutions
+    zh_Hans: RecraftV3 提供增强的图像生成能力，支持多种模型变体和分辨率
+  label:
+    en_US: RecraftV3
+    zh_Hans: RecraftV3 图像生成
+  name: recraftv3
+parameters:
+  - form: llm
+    human_description:
+      en_US: Image generation prompt
+      zh_Hans: 图像生成提示词
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description: Detailed description of the image to generate
+    name: prompt
+    required: true
+    type: string
+  - form: form
+    human_description:
+      en_US: Select model variant
+      zh_Hans: 选择模型版本
+    label:
+      en_US: Model Version
+      zh_Hans: 模型版本
+    name: model
+    options:
+      - value: recraftv3
+        label:
+          en_US: RecraftV3
+          zh_Hans: RecraftV3
+      - value: recraftv3-halloween
+        label:
+          en_US: RecraftV3 Halloween
+          zh_Hans: RecraftV3 万圣节版
+    default: recraftv3
+    required: true
+    type: select
+  - default: 1024x1024
+    form: form
+    human_description:
+      en_US: Select image dimensions
+      zh_Hans: 选择图像尺寸
+    label:
+      en_US: Image size
+      zh_Hans: 图像尺寸
+    name: size
+    options:
+      - value: 1024x512
+        label:
+          en_US: 1024x512
+          zh_Hans: 1024x512
+      - value: 1024x1024
+        label:
+          en_US: 1024x1024
+          zh_Hans: 1024x1024
+      - value: 1024x576
+        label:
+          en_US: 1024x576
+          zh_Hans: 1024x576
+      - value: 1024x768
+        label:
+          en_US: 1024x768
+          zh_Hans: 1024x768
+      - value: 512x1024
+        label:
+          en_US: 512x1024
+          zh_Hans: 512x1024
+      - value: 512x768
+        label:
+          en_US: 512x768
+          zh_Hans: 512x768
+      - value: 1280x960
+        label:
+          en_US: 1280x960
+          zh_Hans: 1280x960
+      - value: 960x1280
+        label:
+          en_US: 960x1280
+          zh_Hans: 960x1280
+      - value: 768x1366
+        label:
+          en_US: 768x1366
+          zh_Hans: 768x1366
+      - value: 768x512
+        label:
+          en_US: 768x512
+          zh_Hans: 768x512
+      - value: 1366x768
+        label:
+          en_US: 1366x768
+          zh_Hans: 1366x768
+      - value: 1344x576
+        label:
+          en_US: 1344x576
+          zh_Hans: 1344x576
+    required: true
+    type: select

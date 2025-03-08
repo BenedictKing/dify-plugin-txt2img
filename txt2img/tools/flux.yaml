@@ -1,0 +1,117 @@
+description:
+  human:
+    en_US: Flux is a text to image tool
+    zh_Hans: Flux 是一个文本到图像的工具
+  llm: Flux is a tool used to generate images from text
+extra:
+  python:
+    source: tools/flux.py
+identity:
+  author: langgenius
+  description:
+    en_US:
+      Flux is a powerful drawing tool that can draw the image you want based
+      on your prompt, with multiple model options and size configurations
+    zh_Hans: Flux 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像，提供多种模型选项和尺寸配置
+  label:
+    en_US: Flux
+    zh_Hans: Flux 绘画
+  name: flux
+parameters:
+  - form: llm
+    human_description:
+      en_US: Image prompt, you can check the official documentation of Flux
+      zh_Hans: 图像提示词，您可以查看 Flux 的官方文档
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description:
+      Image prompt of Flux, you should describe the image you want
+      to generate as a list of words as possible as detailed
+    name: prompt
+    required: true
+    type: string
+  - default: flux
+    form: form
+    human_description:
+      en_US: Select the Flux model to use
+      zh_Hans: 选择要使用的Flux模型
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    name: model
+    options:
+      - value: flux
+        label:
+          en_US: Flux
+          zh_Hans: Flux
+      - value: flux-dev
+        label:
+          en_US: Flux Dev
+          zh_Hans: Flux 开发版
+      - value: flux-pro
+        label:
+          en_US: Flux Pro
+          zh_Hans: Flux 专业版
+    required: true
+    type: select
+  - default: 1024x1024
+    form: form
+    human_description:
+      en_US: selecting the image size
+      zh_Hans: 选择图像大小
+    label:
+      en_US: Image size
+      zh_Hans: 图像大小
+    name: size
+    options:
+      - value: 1024x512
+        label:
+          en_US: 1024x512
+          zh_Hans: 1024x512
+      - value: 1024x1024
+        label:
+          en_US: 1024x1024
+          zh_Hans: 1024x1024
+      - value: 1024x576
+        label:
+          en_US: 1024x576
+          zh_Hans: 1024x576
+      - value: 1024x768
+        label:
+          en_US: 1024x768
+          zh_Hans: 1024x768
+      - value: 512x1024
+        label:
+          en_US: 512x1024
+          zh_Hans: 512x1024
+      - value: 512x768
+        label:
+          en_US: 512x768
+          zh_Hans: 512x768
+      - value: 1280x960
+        label:
+          en_US: 1280x960
+          zh_Hans: 1280x960
+      - value: 960x1280
+        label:
+          en_US: 960x1280
+          zh_Hans: 960x1280
+      - value: 768x1366
+        label:
+          en_US: 768x1366
+          zh_Hans: 768x1366
+      - value: 768x512
+        label:
+          en_US: 768x512
+          zh_Hans: 768x512
+      - value: 1366x768
+        label:
+          en_US: 1366x768
+          zh_Hans: 1366x768
+      - value: 1344x576
+        label:
+          en_US: 1344x576
+          zh_Hans: 1344x576
+    required: true
+    type: select

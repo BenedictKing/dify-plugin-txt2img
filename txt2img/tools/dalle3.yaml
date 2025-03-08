@@ -1,0 +1,58 @@
+description:
+  human:
+    en_US: DALL-E is a text to image tool
+    zh_Hans: DALL-E 是一个文本到图像的工具
+  llm: DALL-E is a tool used to generate images from text
+extra:
+  python:
+    source: tools/dalle3.py
+identity:
+  author: langgenius
+  description:
+    en_US:
+      DALL-E 3 is a powerful drawing tool that can draw the image you want based
+      on your prompt, compared to DallE 2, DallE 3 has stronger drawing ability, but
+      it will consume more resources
+    zh_Hans: DALL-E 3 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像，相比于DallE 2， DallE 3拥有更强的绘画能力，但会消耗更多的资源
+  label:
+    en_US: DALL-E 3
+    zh_Hans: DALL-E 3 绘画
+  name: dalle3
+parameters:
+  - form: llm
+    human_description:
+      en_US: Image prompt, you can check the official documentation of DallE 3
+      zh_Hans: 图像提示词，您可以查看 DallE 3 的官方文档
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description:
+      Image prompt of DallE 3, you should describe the image you want
+      to generate as a list of words as possible as detailed
+    name: prompt
+    required: true
+    type: string
+  - default: 1024x1024
+    form: form
+    human_description:
+      en_US: selecting the image size
+      zh_Hans: 选择图像大小
+    label:
+      en_US: Image size
+      zh_Hans: 图像大小
+    name: size
+    options:
+      - value: 1024x1024
+        label:
+          en_US: 1024x1024
+          zh_Hans: 1024x1024
+      - value: 1024x1792
+        label:
+          en_US: 1024x1792
+          zh_Hans: 1024x1792
+      - value: 1792x1024
+        label:
+          en_US: 1792x1024
+          zh_Hans: 1792x1024
+    required: true
+    type: select
