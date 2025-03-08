@@ -173,3 +173,4 @@ cython_debug/
 .env.enter
 .env.leave
 .aider*
+*.difypkg
