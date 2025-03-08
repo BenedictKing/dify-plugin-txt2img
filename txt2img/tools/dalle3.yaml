@@ -7,7 +7,7 @@ extra:
   python:
     source: tools/dalle3.py
 identity:
-  author: langgenius
+  author: king
   description:
     en_US:
       DALL-E 3 is a powerful drawing tool that can draw the image you want based

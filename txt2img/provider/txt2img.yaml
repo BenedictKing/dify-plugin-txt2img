@@ -19,8 +19,8 @@ credentials_for_provider:
       en_US: OpenAI base URL
       zh_Hans: OpenAI base URL
     placeholder:
-      en_US: Please input your OpenAI base URL
-      zh_Hans: 请输入你的 OpenAI base URL
+      en_US: Please input your OpenAI base URL (without /v1 suffix)
+      zh_Hans: 请输入你的 OpenAI base URL (不带 /v1 结尾)
     required: false
     type: text-input
 identity:

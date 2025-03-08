@@ -7,7 +7,7 @@ extra:
   python:
     source: tools/flux.py
 identity:
-  author: langgenius
+  author: king
   description:
     en_US:
       Flux is a powerful drawing tool that can draw the image you want based

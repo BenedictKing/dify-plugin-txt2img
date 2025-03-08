@@ -1,13 +1,13 @@
 description:
   human:
-    en_US: Recraftv3 is an advanced text-to-image tool
-    zh_Hans: Recraftv3 是先进的文本到图像工具
-  llm: Recraftv3 generates high-quality images from text descriptions
+    en_US: RecraftV3 is an advanced text-to-image tool
+    zh_Hans: RecraftV3 是先进的文本到图像工具
+  llm: RecraftV3 generates high-quality images from text descriptions
 extra:
   python:
     source: tools/recraftv3.py
 identity:
-  author: langgenius
+  author: king
   description:
     en_US:
       RecraftV3 offers enhanced image generation capabilities with multiple model variants,
