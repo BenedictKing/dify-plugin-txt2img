@@ -13,9 +13,10 @@ identity:
       RecraftV3 offers enhanced image generation capabilities with multiple model variants,
       supporting various aspect ratios and resolutions
     zh_Hans: RecraftV3 提供增强的图像生成能力，支持多种模型变体和分辨率
+  icon: icon.svg
   label:
     en_US: RecraftV3
-    zh_Hans: RecraftV3 图像生成
+    zh_Hans: RecraftV3 绘画
   name: recraftv3
 parameters:
   - form: llm
@@ -50,7 +51,7 @@ parameters:
     required: true
     type: select
   - default: 1024x1024
-    form: form
+    form: llm
     human_description:
       en_US: Select image dimensions
       zh_Hans: 选择图像尺寸
@@ -62,50 +63,38 @@ parameters:
       - value: 1024x512
         label:
           en_US: 1024x512
-          zh_Hans: 1024x512
       - value: 1024x1024
         label:
           en_US: 1024x1024
-          zh_Hans: 1024x1024
       - value: 1024x576
         label:
           en_US: 1024x576
-          zh_Hans: 1024x576
       - value: 1024x768
         label:
           en_US: 1024x768
-          zh_Hans: 1024x768
       - value: 512x1024
         label:
           en_US: 512x1024
-          zh_Hans: 512x1024
       - value: 512x768
         label:
           en_US: 512x768
-          zh_Hans: 512x768
       - value: 1280x960
         label:
           en_US: 1280x960
-          zh_Hans: 1280x960
       - value: 960x1280
         label:
           en_US: 960x1280
-          zh_Hans: 960x1280
       - value: 768x1366
         label:
           en_US: 768x1366
-          zh_Hans: 768x1366
       - value: 768x512
         label:
           en_US: 768x512
-          zh_Hans: 768x512
       - value: 1366x768
         label:
           en_US: 1366x768
-          zh_Hans: 1366x768
       - value: 1344x576
         label:
           en_US: 1344x576
-          zh_Hans: 1344x576
     required: true
-    type: select
+    type: string

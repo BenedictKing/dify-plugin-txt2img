@@ -14,6 +14,7 @@ identity:
       on your prompt, compared to DallE 2, DallE 3 has stronger drawing ability, but
       it will consume more resources
     zh_Hans: DALL-E 3 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像，相比于DallE 2， DallE 3拥有更强的绘画能力，但会消耗更多的资源
+  icon: icon.svg
   label:
     en_US: DALL-E 3
     zh_Hans: DALL-E 3 绘画
@@ -33,7 +34,7 @@ parameters:
     required: true
     type: string
   - default: 1024x1024
-    form: form
+    form: llm
     human_description:
       en_US: selecting the image size
       zh_Hans: 选择图像大小
@@ -45,14 +46,11 @@ parameters:
       - value: 1024x1024
         label:
           en_US: 1024x1024
-          zh_Hans: 1024x1024
       - value: 1024x1792
         label:
           en_US: 1024x1792
-          zh_Hans: 1024x1792
       - value: 1792x1024
         label:
           en_US: 1792x1024
-          zh_Hans: 1792x1024
     required: true
-    type: select
+    type: string

@@ -20,13 +20,73 @@ class ImageGenerator:
             base_url=openai_base_url,
         )
 
-    def generate_image(self, prompt: str, model: str, size: str, n: int = 1):
+    def find_closest_size(self, requested_size: str, supported_sizes: list) -> str:
+        """Find the closest supported size to the requested size
+
+        Args:
+            requested_size: The size requested by the user (e.g. '1024x1024')
+            supported_sizes: List of sizes supported by the model (e.g. ['1024x1024', '512x512'])
+                             Must be provided and not empty
+
+        Returns:
+            The closest supported size
+        """
+        if not supported_sizes:
+            raise ValueError("supported_sizes must be provided and not empty")
+
+        # If the requested size is in the supported sizes, return it
+        if requested_size in supported_sizes:
+            return requested_size
+
+        # Parse the requested size
+        try:
+            req_width, req_height = map(int, requested_size.split("x"))
+        except (ValueError, AttributeError):
+            # If parsing fails, return the default size
+            return supported_sizes[0]
+
+        # Find the closest size by comparing aspect ratios and total pixels
+        closest_size = supported_sizes[0]
+        closest_diff = float("inf")
+
+        for size in supported_sizes:
+            try:
+                width, height = map(int, size.split("x"))
+
+                # Calculate aspect ratio difference
+                req_ratio = req_width / req_height
+                size_ratio = width / height
+                ratio_diff = abs(req_ratio - size_ratio)
+
+                # Calculate total pixels difference
+                req_pixels = req_width * req_height
+                size_pixels = width * height
+                pixel_diff = abs(req_pixels - size_pixels)
+
+                # Combined difference (weighted)
+                diff = (ratio_diff * 100) + (pixel_diff / 10000)
+
+                if diff < closest_diff:
+                    closest_diff = diff
+                    closest_size = size
+            except (ValueError, ZeroDivisionError):
+                continue
+
+        return closest_size
+
+    def generate_image(
+        self, prompt: str, model: str, size: str, supported_sizes: list, n: int = 1
+    ):
         """Generate image using OpenAI API"""
         client = self.get_client()
+
+        # Find the closest supported size
+        actual_size = self.find_closest_size(size, supported_sizes)
+
         return client.images.generate(
             prompt=prompt,
             model=model,
-            size=size,
+            size=actual_size,
             n=n,
             response_format="b64_json",
         )

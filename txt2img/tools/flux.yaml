@@ -13,6 +13,7 @@ identity:
       Flux is a powerful drawing tool that can draw the image you want based
       on your prompt, with multiple model options and size configurations
     zh_Hans: Flux 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像，提供多种模型选项和尺寸配置
+  icon: icon.svg
   label:
     en_US: Flux
     zh_Hans: Flux 绘画
@@ -56,7 +57,7 @@ parameters:
     required: true
     type: select
   - default: 1024x1024
-    form: form
+    form: llm
     human_description:
       en_US: selecting the image size
       zh_Hans: 选择图像大小
@@ -68,50 +69,38 @@ parameters:
       - value: 1024x512
         label:
           en_US: 1024x512
-          zh_Hans: 1024x512
       - value: 1024x1024
         label:
           en_US: 1024x1024
-          zh_Hans: 1024x1024
       - value: 1024x576
         label:
           en_US: 1024x576
-          zh_Hans: 1024x576
       - value: 1024x768
         label:
           en_US: 1024x768
-          zh_Hans: 1024x768
       - value: 512x1024
         label:
           en_US: 512x1024
-          zh_Hans: 512x1024
       - value: 512x768
         label:
           en_US: 512x768
-          zh_Hans: 512x768
       - value: 1280x960
         label:
           en_US: 1280x960
-          zh_Hans: 1280x960
       - value: 960x1280
         label:
           en_US: 960x1280
-          zh_Hans: 960x1280
       - value: 768x1366
         label:
           en_US: 768x1366
-          zh_Hans: 768x1366
       - value: 768x512
         label:
           en_US: 768x512
-          zh_Hans: 768x512
       - value: 1366x768
         label:
           en_US: 1366x768
-          zh_Hans: 1366x768
       - value: 1344x576
         label:
           en_US: 1344x576
-          zh_Hans: 1344x576
     required: true
-    type: select
+    type: string

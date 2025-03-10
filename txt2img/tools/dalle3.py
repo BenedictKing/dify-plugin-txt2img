@@ -5,6 +5,8 @@ from .base_image_tool import ImageGenerator
 
 
 class DallE3Tool(Tool):
+    SUPPORTED_SIZES = ["1024x1024", "1024x1792", "1792x1024"]
+
     def _invoke(
         self, tool_parameters: dict
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -18,6 +20,7 @@ class DallE3Tool(Tool):
             prompt=prompt,
             model="dall-e-3",
             size=tool_parameters.get("size", "1024x1024"),
+            supported_sizes=self.SUPPORTED_SIZES,
         )
 
         for mime_type, blob in generator.process_response(response):
