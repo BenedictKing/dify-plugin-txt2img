@@ -1,0 +1,514 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: example-txt2img
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/volcengine_maas:0.0.7@f8e44422cfa5b9a6ac1f2d3b43ef1069868efdad1e5cec2590de3f53ceac37b0
+- current_identifier: null
+  type: github
+  value:
+    github_plugin_unique_identifier: king/txt2img:0.0.4@7ee31d2f54ae7499b2a45f9b93c2d59e30a9ae976266d04fd2af0b191758b949
+    package: txt2img.difypkg
+    repo: BenedictKing/dify-plugin-txt2img
+    version: 0.0.4
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: code
+      id: 1740997881617-source-1741007172675-target
+      source: '1740997881617'
+      sourceHandle: source
+      target: '1741007172675'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: tool
+      id: 1741007172675-source-1741572521645-target
+      source: '1741007172675'
+      sourceHandle: source
+      target: '1741572521645'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: answer
+      id: 1741572521645-source-1741507013952-target
+      source: '1741572521645'
+      sourceHandle: source
+      target: '1741507013952'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1740993931342-source-1740997881617-target
+      source: '1740993931342'
+      sourceHandle: source
+      target: '1740997881617'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 54
+      id: '1740993931342'
+      position:
+        x: 30
+        y: 251.5
+      positionAbsolute:
+        x: 30
+        y: 251.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-v3-241226
+          provider: langgenius/volcengine_maas/volcengine_maas
+        prompt_template:
+        - id: 5075a0a6-2132-464d-8a3d-5f7397ddf5b9
+          role: system
+          text: '请你帮用户根据他的要求细化画图提示词，并从用户对话中发掘用户对尺寸分辨率的要求{"default":"1024x512","options":["1024x512","1024x1024","1024x576","1024x768","512x1024","512x768","1280x960","960x1280","768x1366","768x512","1366x768","1344x576"]}，不要做多余的说明。
+
+
+            创建 Prompt 提示词时，考虑以下建议：
+
+            1. 使用自然语言而不是关键词堆砌
+
+            2. 具体描述你希望在图像中看到的细节
+
+            3. 包括有关光线、场景和情绪的信息
+
+            4. 试验不同的面部特征和表情描述
+
+
+            例如：
+
+            1. night. glossy shiny black Lamborghini hurricane  car driving  on a
+            wet road leaving a trail of sparkling clear water in its wake.. sponsor
+            stickers on the car. wheel cups are red.  reflection of the car on the
+            clear water. clear water splashes as the car driving. cinematic darkness.
+            minimal landscape in the background. warm neon light
+
+            2. A charismatic speaker is captured mid-speech. He has short, tousled
+            brown hair that''s slightly messy on top. He has a round circle face,
+            clean shaven, adorned with rounded rectangular-framed glasses with dark
+            rims, is animated as he gestures with his left hand. He is holding a black
+            microphone in his right hand, speaking passionately.  The man is wearing
+            a light grey sweater over a white t-shirt. He''s also wearing a simple
+            black lanyard hanging around his neck. The lanyard badge has the text
+            "Liang Zai".  Behind him, there is a blurred background with a white banner
+            containing logos and text (including Liang Zai), a professional conference
+            setting.
+
+            3. A middle-aged male woodworker in his sunlit workshop. He has weathered
+            hands and a focused expression as he carefully carves intricate details
+            into a piece of rich mahogany. His salt-and-pepper beard is neatly trimmed,
+            and he''s wearing a well-worn leather apron over a flannel shirt. Dust
+            motes dance in the warm afternoon light streaming through the windows,
+            creating a cozy atmosphere.
+
+            4. A beautiful woman,slightly bend and lower head + perfect face + pale
+            red lips,Ultraviolet,Charlie Bowater style,Paper,The composition mode
+            is Waist shot style,Hopeful,Octane render,4k HD
+
+            5. A lively street performer in her early 30s captivates a small crowd
+            in a bustling city square. She has vibrant teal hair styled in a messy
+            updo, bright green eyes, and a contagious smile. Her face is adorned with
+            intricate, shimmering face paint in swirling patterns. She''s wearing
+            a colorful, patchwork dress and is mid-motion, juggling three flaming
+            torches. The background is slightly blurred, showing the impressed onlookers
+            and the warm glow of street lamps at dusk.
+
+            6. An elderly Indigenous man in his late 80s sits on a weathered wooden
+            bench, gazing thoughtfully at a distant mountain range. His face is a
+            roadmap of deep wrinkles, telling stories of a life well-lived. He has
+            long, silver hair tied back in a neat braid, and his dark eyes hold a
+            wealth of wisdom. He''s wearing traditional clothing adorned with intricate
+            beadwork. The golden light of sunset bathes the scene in warm hues, creating
+            a serene and powerful atmosphere.
+
+            7. A close-up of a female marathon runner in her late 20s as she approaches
+            the finish line. Sweat glistens on her forehead, and her expression is
+            one of intense determination. Her hair is pulled back in a tight ponytail,
+            with a few stray strands clinging to her flushed cheeks. She''s wearing
+            a bright yellow running singlet with a race number pinned to it. The background
+            is slightly blurred, showing cheering spectators and the finish line banner.
+
+            8. A quirky inventor in his mid-60s stands proudly next to his latest
+            creation in his cluttered workshop. He has wild, Einstein-like white hair,
+            twinkling blue eyes behind round spectacles, and an excited grin. His
+            face is smudged with grease, and he''s wearing a lab coat covered in colorful
+            stains and patches. The background is filled with an assortment of bizarre
+            contraptions, blueprints, and tools. Soft, warm lighting from an old-fashioned
+            desk lamp illuminates the scene.
+
+
+            输出格式为：
+
+            {"prompt":画图用的提示词,"size":图片尺寸字符串}'
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1740997881617'
+      position:
+        x: 334
+        y: 251.5
+      positionAbsolute:
+        x: 334
+        y: 251.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\ndef main(text: str) -> dict:\n    import json\n    data=json.loads(text)\n\
+          \    prompt=data.get(\"prompt\")\n    size=data.get(\"size\")\n    if not\
+          \ size:\n        size=\"1024x1024\"\n\n    return {\n        \"prompt\"\
+          : prompt,\n        \"size\": size,\n    }\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          prompt:
+            children: null
+            type: string
+          size:
+            children: null
+            type: string
+        selected: false
+        title: 代码执行
+        type: code
+        variables:
+        - value_selector:
+          - '1740997881617'
+          - text
+          variable: text
+      height: 54
+      id: '1741007172675'
+      position:
+        x: 638
+        y: 251.5
+      positionAbsolute:
+        x: 638
+        y: 251.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Image prompt, you can check the official documentation of Flux
+            ja_JP: Image prompt, you can check the official documentation of Flux
+            pt_BR: Image prompt, you can check the official documentation of Flux
+            zh_Hans: 图像提示词，您可以查看 Flux 的官方文档
+          label:
+            en_US: Prompt
+            ja_JP: Prompt
+            pt_BR: Prompt
+            zh_Hans: 提示词
+          llm_description: Image prompt of Flux, you should describe the image you
+            want to generate as a list of words as possible as detailed
+          max: null
+          min: null
+          name: prompt
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: flux
+          form: form
+          human_description:
+            en_US: Select the Flux model to use
+            ja_JP: Select the Flux model to use
+            pt_BR: Select the Flux model to use
+            zh_Hans: 选择要使用的Flux模型
+          label:
+            en_US: Model
+            ja_JP: Model
+            pt_BR: Model
+            zh_Hans: 模型
+          llm_description: ''
+          max: null
+          min: null
+          name: model
+          options:
+          - label:
+              en_US: Flux
+              ja_JP: Flux
+              pt_BR: Flux
+              zh_Hans: Flux
+            value: flux
+          - label:
+              en_US: Flux Dev
+              ja_JP: Flux Dev
+              pt_BR: Flux Dev
+              zh_Hans: Flux 开发版
+            value: flux-dev
+          - label:
+              en_US: Flux Pro
+              ja_JP: Flux Pro
+              pt_BR: Flux Pro
+              zh_Hans: Flux 专业版
+            value: flux-pro
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: select
+        - auto_generate: null
+          default: 1024x1024
+          form: llm
+          human_description:
+            en_US: selecting the image size
+            ja_JP: selecting the image size
+            pt_BR: selecting the image size
+            zh_Hans: 选择图像大小
+          label:
+            en_US: Image size
+            ja_JP: Image size
+            pt_BR: Image size
+            zh_Hans: 图像大小
+          llm_description: ''
+          max: null
+          min: null
+          name: size
+          options:
+          - label:
+              en_US: 1024x512
+              ja_JP: 1024x512
+              pt_BR: 1024x512
+              zh_Hans: 1024x512
+            value: 1024x512
+          - label:
+              en_US: 1024x1024
+              ja_JP: 1024x1024
+              pt_BR: 1024x1024
+              zh_Hans: 1024x1024
+            value: 1024x1024
+          - label:
+              en_US: 1024x576
+              ja_JP: 1024x576
+              pt_BR: 1024x576
+              zh_Hans: 1024x576
+            value: 1024x576
+          - label:
+              en_US: 1024x768
+              ja_JP: 1024x768
+              pt_BR: 1024x768
+              zh_Hans: 1024x768
+            value: 1024x768
+          - label:
+              en_US: 512x1024
+              ja_JP: 512x1024
+              pt_BR: 512x1024
+              zh_Hans: 512x1024
+            value: 512x1024
+          - label:
+              en_US: 512x768
+              ja_JP: 512x768
+              pt_BR: 512x768
+              zh_Hans: 512x768
+            value: 512x768
+          - label:
+              en_US: 1280x960
+              ja_JP: 1280x960
+              pt_BR: 1280x960
+              zh_Hans: 1280x960
+            value: 1280x960
+          - label:
+              en_US: 960x1280
+              ja_JP: 960x1280
+              pt_BR: 960x1280
+              zh_Hans: 960x1280
+            value: 960x1280
+          - label:
+              en_US: 768x1366
+              ja_JP: 768x1366
+              pt_BR: 768x1366
+              zh_Hans: 768x1366
+            value: 768x1366
+          - label:
+              en_US: 768x512
+              ja_JP: 768x512
+              pt_BR: 768x512
+              zh_Hans: 768x512
+            value: 768x512
+          - label:
+              en_US: 1366x768
+              ja_JP: 1366x768
+              pt_BR: 1366x768
+              zh_Hans: 1366x768
+            value: 1366x768
+          - label:
+              en_US: 1344x576
+              ja_JP: 1344x576
+              pt_BR: 1344x576
+              zh_Hans: 1344x576
+            value: 1344x576
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        params:
+          model: ''
+          prompt: ''
+          size: ''
+        provider_id: king/txt2img/txt2img
+        provider_name: king/txt2img/txt2img
+        provider_type: builtin
+        selected: false
+        title: Flux 绘画
+        tool_configurations:
+          model: flux
+        tool_label: Flux 绘画
+        tool_name: flux
+        tool_parameters:
+          prompt:
+            type: mixed
+            value: '{{#1741007172675.prompt#}}'
+          size:
+            type: mixed
+            value: '{{#1741007172675.size#}}'
+        type: tool
+      height: 90
+      id: '1741572521645'
+      position:
+        x: 942
+        y: 251.5
+      positionAbsolute:
+        x: 942
+        y: 251.5
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1741572521645.files#}}'
+        desc: ''
+        selected: false
+        title: 直接回复 4
+        type: answer
+        variables: []
+      height: 103
+      id: '1741507013952'
+      position:
+        x: 1246
+        y: 251.5
+      positionAbsolute:
+        x: 1246
+        y: 251.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: -13.302811226303106
+      y: 154.1456492678583
+      zoom: 0.6018295403701046

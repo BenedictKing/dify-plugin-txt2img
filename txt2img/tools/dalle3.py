@@ -15,11 +15,20 @@ class DallE3Tool(Tool):
             yield self.create_text_message("Please input prompt")
             return
 
+        quality = tool_parameters.get("quality", "standard")
+        if quality not in {"standard", "hd"}:
+            quality = "standard"
+        style = tool_parameters.get("style", "vivid")
+        if style not in {"natural", "vivid"}:
+            style = "vivid"
+
         generator = ImageGenerator(self.runtime.credentials)
         response = generator.generate_image(
             prompt=prompt,
             model="dall-e-3",
             size=tool_parameters.get("size", "1024x1024"),
+            style=style,
+            quality=quality,
             supported_sizes=self.SUPPORTED_SIZES,
         )
 

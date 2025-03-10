@@ -75,7 +75,14 @@ class ImageGenerator:
         return closest_size
 
     def generate_image(
-        self, prompt: str, model: str, size: str, supported_sizes: list, n: int = 1
+        self,
+        prompt: str,
+        model: str,
+        size: str,
+        supported_sizes: list,
+        style: str = None,
+        quality: str = None,
+        n: int = 1,
     ):
         """Generate image using OpenAI API"""
         client = self.get_client()
@@ -88,6 +95,8 @@ class ImageGenerator:
             model=model,
             size=actual_size,
             n=n,
+            style=style,
+            quality=quality,
             response_format="b64_json",
         )
 

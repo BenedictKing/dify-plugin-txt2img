@@ -54,3 +54,43 @@ parameters:
           en_US: 1792x1024
     required: true
     type: string
+  - default: standard
+    form: form
+    human_description:
+      en_US: selecting the image quality
+      zh_Hans: 选择图像质量
+    label:
+      en_US: Image quality
+      zh_Hans: 图像质量
+    name: quality
+    options:
+      - label:
+          en_US: Standard
+          zh_Hans: 标准
+        value: standard
+      - label:
+          en_US: HD
+          zh_Hans: 高清
+        value: hd
+    required: true
+    type: select
+  - default: vivid
+    form: form
+    human_description:
+      en_US: selecting the image style
+      zh_Hans: 选择图像风格
+    label:
+      en_US: Image style
+      zh_Hans: 图像风格
+    name: style
+    options:
+      - label:
+          en_US: Vivid
+          zh_Hans: 生动
+        value: vivid
+      - label:
+          en_US: Natural
+          zh_Hans: 自然
+        value: natural
+    required: true
+    type: select
