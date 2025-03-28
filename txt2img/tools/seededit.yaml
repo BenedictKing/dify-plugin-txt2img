@@ -1,0 +1,43 @@
+identity:
+  name: seededit
+  author: king
+  label:
+    en_US: seededit
+    zh_Hans: seededit
+    pt_BR: seededit
+description:
+  human:
+    en_US: openai seededit
+    zh_Hans: openai seededit
+    pt_BR: openai seededit
+  llm: openai seededit
+extra:
+  python:
+    source: tools/seededit.py
+parameters:
+  - name: instruction
+    type: string
+    form: llm
+    required: true
+    label:
+      en_US: Edit Instruction
+      zh_Hans: 编辑指令
+      pt_BR: Instrução de Edição
+    human_description:
+      en_US: "Detailed editing instructions (e.g. 'Add sunglasses and change shirt color to red')"
+      zh_Hans: "详细的编辑指令（例如：'添加墨镜并将衬衫颜色改为红色'）"
+      pt_BR: "Instruções detalhadas de edição (ex: 'Adicionar óculos escuros e mudar cor da camisa para vermelho')"
+    llm_description: "Natural language editing instructions"
+  - name: image_url
+    type: string
+    form: llm
+    required: false
+    label:
+      en_US: Image URL
+      zh_Hans: 图片链接
+      pt_BR: URL da Imagem
+    human_description:
+      en_US: "Publicly accessible image URL (e.g. https://example.com/image.jpg)"
+      zh_Hans: "可公开访问的图片链接（例如 https://example.com/image.jpg）"
+      pt_BR: "URL de imagem publicamente acessível (ex. https://example.com/image.jpg)"
+    llm_description: "The URL of the image to be edited"

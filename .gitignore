@@ -169,8 +169,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-.env
-.env.enter
-.env.leave
-.aider*
+
+# Virtual environments
+.venv
 *.difypkg
+.autoenv.*
+.aider*

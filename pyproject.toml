@@ -1,0 +1,13 @@
+[project]
+name = "dify-plugin-txt2img"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dify-plugin~=0.0.1b67",
+    "openai>=1.65.2",
+]
+
+[tool.ruff]
+line-length=176

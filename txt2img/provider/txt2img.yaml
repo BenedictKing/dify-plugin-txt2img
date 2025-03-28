@@ -1,3 +1,24 @@
+identity:
+  author: king
+  name: txt2img
+  label:
+    en_US: txt2img
+    zh_Hans: txt2img
+  description:
+    en_US: Use third-party APIs for text-to-image generation, compatible with Flux, Recraftv3, and OpenAI DALL·E 3
+    zh_Hans: 调用第三方API实现文生图, 兼容Flux, Recraftv3, OpenAI DALL·E 3
+  icon: icon.svg
+  tags:
+    - image
+    - productivity
+tools:
+  - tools/flux.yaml
+  - tools/recraftv3.yaml
+  - tools/dalle3.yaml
+  - tools/seededit.yaml
+extra:
+  python:
+    source: provider/txt2img.py
 credentials_for_provider:
   openai_api_key:
     help:
@@ -23,23 +44,3 @@ credentials_for_provider:
       zh_Hans: 请输入你的 OpenAI base URL (不带 /v1 结尾)
     required: false
     type: text-input
-identity:
-  author: king
-  name: txt2img
-  label:
-    en_US: txt2img
-    zh_Hans: txt2img
-  description:
-    en_US: Use third-party APIs for text-to-image generation, compatible with Flux, Recraftv3, and OpenAI DALL·E 3
-    zh_Hans: 调用第三方API实现文生图, 兼容Flux, Recraftv3, OpenAI DALL·E 3
-  icon: icon.svg
-  tags:
-    - image
-    - productivity
-tools:
-  - tools/flux.yaml
-  - tools/recraftv3.yaml
-  - tools/dalle3.yaml
-extra:
-  python:
-    source: provider/txt2img.py
