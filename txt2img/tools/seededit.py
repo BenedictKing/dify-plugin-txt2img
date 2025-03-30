@@ -19,7 +19,6 @@ class SeededitTool(Tool):
         openai_base_url = str(URL(openai_base_url) / "v1")
 
         image_url = tool_parameters.get("image_url")
-        # 构建model和messages
         model = "gpt-4o-all"
         messages = [
             {
@@ -28,16 +27,11 @@ class SeededitTool(Tool):
             }
         ]
         if image_url:
-            # model = "seededit"
             messages[0]["content"] = f"{image_url} {tool_parameters['instruction']}"
         else:
             sp = tool_parameters["instruction"].split(" ")
             if sp[0].startswith("http"):
-                # model = "seededit"
                 messages[0]["content"] = tool_parameters["instruction"]
-        # 这一块精简一些 模型只用"gpt-4o-all" AI!
-        # print(f"model: {model}")
-        # print(messages)
 
         client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
 
