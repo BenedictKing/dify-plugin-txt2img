@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from typing import Any
-
+import re
 import openai
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -55,8 +55,15 @@ class SeededitTool(Tool):
                 yield self.create_json_message({"result": content.strip()})
             else:
                 result = response.choices[0].message.content
-                # 从mock_result中提取后面的图片url AI!
-                yield self.create_json_message({"result": result})
+                # Extract image URLs from markdown format
+                image_urls = re.findall(r'!\[.*?\]\((https?://[^\s)]+)', result)
+                download_urls = re.findall(r'\[下载⏬\]\((https?://[^\s)]+)', result)
+                
+                images = [{"url": url, "download_url": dl} for url, dl in zip(image_urls, download_urls)]
+                yield self.create_json_message({
+                    "text": result.strip(),
+                    "images": images
+                })
 
         except openai.error.OpenAIError as e:
             # 通过异常对象获取状态码
