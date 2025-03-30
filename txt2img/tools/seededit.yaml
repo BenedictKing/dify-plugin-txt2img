@@ -64,4 +64,28 @@ parameters:
       zh_Hans: "启用实时流式输出部分结果"
       pt_BR: "Ativar transmissão em tempo real de resultados parciais"
     llm_description: "Enable real-time streaming of partial results"
-  #加一项可选model是gpt-4o-all或者gpt-4o-image AI!
+  - name: model
+    type: select
+    form: llm
+    required: false
+    default: gpt-4o-all
+    options:
+      - label:
+          en_US: "gpt-4o-all"
+          zh_Hans: "gpt-4o-all"
+          pt_BR: "gpt-4o-all" 
+        value: gpt-4o-all
+      - label:
+          en_US: "gpt-4o-image"
+          zh_Hans: "gpt-4o-image"
+          pt_BR: "gpt-4o-image"
+        value: gpt-4o-image
+    label:
+      en_US: Model Version
+      zh_Hans: 模型版本
+      pt_BR: Versão do Modelo
+    human_description:
+      en_US: "Select AI model version (gpt-4o-all or gpt-4o-image)"
+      zh_Hans: "选择AI模型版本 (gpt-4o-all 或 gpt-4o-image)"
+      pt_BR: "Selecione a versão do modelo AI (gpt-4o-all ou gpt-4o-image)"
+    llm_description: "The version of the AI model to use for generation"
