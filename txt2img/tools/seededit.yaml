@@ -41,3 +41,27 @@ parameters:
       zh_Hans: "可公开访问的图片链接（例如 https://example.com/image.jpg）"
       pt_BR: "URL de imagem publicamente acessível (ex. https://example.com/image.jpg)"
     llm_description: "The URL of the image to be edited"
+  - name: stream
+    type: select
+    form: llm
+    required: false
+    default: false
+    options:
+      - label:
+          en_US: "no"
+          zh_Hans: "否"
+        value: false
+      - label:
+          en_US: "yes"
+          zh_Hans: "是"
+        value: true
+    label:
+      en_US: Stream Output
+      zh_Hans: 流式输出
+      pt_BR: Saída em Fluxo
+    human_description:
+      en_US: "Enable real-time streaming of partial results"
+      zh_Hans: "启用实时流式输出部分结果"
+      pt_BR: "Ativar transmissão em tempo real de resultados parciais"
+    llm_description: "Enable real-time streaming of partial results"
+  #加一项可选model是gpt-4o-all或者gpt-4o-image AI!

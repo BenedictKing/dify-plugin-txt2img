@@ -1,7 +1,7 @@
+import re
 from collections.abc import Generator
 from typing import Any
-import re
-import openai
+
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from openai import OpenAI
@@ -28,10 +28,10 @@ class SeededitTool(Tool):
         ]
         if image_url:
             messages[0]["content"] = f"{image_url} {tool_parameters['instruction']}"
-        else:
-            sp = tool_parameters["instruction"].split(" ")
-            if sp[0].startswith("http"):
-                messages[0]["content"] = tool_parameters["instruction"]
+        # else:
+        #     sp = tool_parameters["instruction"].split(" ")
+        #     if sp[0].startswith("http"):
+        #         messages[0]["content"] = tool_parameters["instruction"]
 
         client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
 
@@ -39,30 +39,26 @@ class SeededitTool(Tool):
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                stream=False,
+                stream=tool_parameters.get("stream", False),
             )
 
-            # if tool_parameters.get("stream", False):
-            #     content = ""
-            #     for chunk in response:
-            #         if chunk.choices and chunk.choices[0].delta.content:
-            #             content += chunk.choices[0].delta.content
-            #             yield self.create_text_message(chunk.choices[0].delta.content)
-            #     yield self.create_json_message({"result": content.strip()})
-            # else:
-            result = response.choices[0].message.content
-            # result = mock_failed_result
-            # Extract image URLs from markdown format
+            if tool_parameters.get("stream", False):
+                content = ""
+                for chunk in response:
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        content += chunk.choices[0].delta.content
+                        yield self.create_text_message(chunk.choices[0].delta.content)
+                # yield self.create_json_message({"result": content.strip()})
+                result = content
+            else:
+                result = response.choices[0].message.content
+                # result = mock_failed_result
+                # Extract image URLs from markdown format
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", result)
             if image_urls:
-                yield self.create_image_message(image_urls[0])
+                yield self.create_image_message(image_urls[-1])
                 return
             yield self.create_text_message("当前流量限制，请稍后再试")
 
-        except openai.error.OpenAIError as e:
-            # 通过异常对象获取状态码
-            # print(f"Error Status Code: {e.status_code}")
-            # print(f"Error Message: {e}")
-            raise BaseException(f"API Error: {str(e)}")
         except Exception as e:
             raise BaseException(f"API Error: {str(e)}")
