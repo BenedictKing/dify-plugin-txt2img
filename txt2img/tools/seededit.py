@@ -19,7 +19,7 @@ class SeededitTool(Tool):
         openai_base_url = str(URL(openai_base_url) / "v1")
 
         image_url = tool_parameters.get("image_url")
-        model = "gpt-4o-all"
+        model = tool_parameters.get("model", "gpt-4o-all")
         messages = [
             {
                 "role": "user",
