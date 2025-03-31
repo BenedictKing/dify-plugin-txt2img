@@ -70,14 +70,14 @@ class SeededitTool(Tool):
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
                 last_url = image_urls[-1]
-                
-                if not any(last_url.lower().endswith(ext) for ext in ('.png', '.jpg', '.jpeg')):
+
+                if not any(last_url.lower().endswith(ext) for ext in (".png", ".jpg", ".jpeg")):
                     try:
                         # Download image and convert to base64
-                        response = requests.get(last_url, timeout=10)
+                        response = requests.get(last_url, timeout=30)
                         response.raise_for_status()
-                        content_type = response.headers.get('Content-Type', 'image/png')
-                        base64_image = base64.b64encode(response.content).decode('utf-8')
+                        content_type = response.headers.get("Content-Type", "image/png")
+                        base64_image = base64.b64encode(response.content).decode("utf-8")
                         data_uri = f"data:{content_type};base64,{base64_image}"
                         yield self.create_image_message(data_uri)
                     except Exception as e:
@@ -85,7 +85,7 @@ class SeededitTool(Tool):
                         yield self.create_text_message("图片处理失败，请尝试重新生成")
                 else:
                     yield self.create_image_message(last_url)
-                
+
                 return
             yield self.create_text_message("当前流量限制，请稍后再试")
 
