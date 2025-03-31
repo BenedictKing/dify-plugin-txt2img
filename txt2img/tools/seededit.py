@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from collections.abc import Generator
 from typing import Any
@@ -8,8 +9,9 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from yarl import URL
 
-# mock_result = '{\n  "prompt": "A Tibetan Mastiff walking on a zebra crossing along with a golden retriever and a dachshund.",\n  "referenced_image_ids": ["file-K51ZztW2MdH2z9J6gQzxR7"]\n}\n\n> 进度 **2%**\n\n\n> 进度 **34%**\n\n\n> 进度 **67%**\n\n\n\n![file_000000007a5451f7b4c098cb3d95dace](https://filesystem.site/cdn/20250330/JfAL6qr7iuQsq0UwLSfK8W2XvP1rgv.png)\n[下载⏬](https://filesystem.site/cdn/download/20250330/JfAL6qr7iuQsq0UwLSfK8W2XvP1rgv.png)\n\n'
-# mock_failed_result = '{\n  "prompt": "A tiger in the center of the image, replacing the dog, while maintaining the rest of the scene as is.",\n  "size": "1024x1024"\n}I wasn\'t able to generate the image because there\'s a rate limit in place. Please wait for a little while before I can assist with your request again. Feel free to let me know if you\'d like to modify the request or need anything else!'
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class SeededitTool(Tool):
@@ -21,7 +23,7 @@ class SeededitTool(Tool):
 
         image_url = tool_parameters.get("image_url")
         model = tool_parameters.get("model", "gpt-4o-all")
-        stream = tool_parameters.get("stream", False)
+        stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
         messages = [
             {
                 "role": "user",
@@ -30,20 +32,20 @@ class SeededitTool(Tool):
         ]
         if image_url:
             messages[0]["content"] = f"{image_url} {tool_parameters['instruction']}"
-        print(f"base: {openai_base_url}, model: {model}, stream: {stream} , messages: {messages}")
 
         try:
-            openai_payload = {"model": model, "messages": messages}
-
             # 发送API请求
+            openai_payload = {"model": model, "messages": messages, "stream": stream}
             headers = {"Authorization": f"Bearer {openai_api_key}", "Content-Type": "application/json"}
-            response = requests.post(openai_url, headers=headers, json=openai_payload, timeout=300, stream=stream)
+            logger.info({"url": openai_url, "headers": headers, "payload": openai_payload})
+            response = requests.post(openai_url, headers=headers, json=openai_payload, timeout=60, stream=stream)
             response.raise_for_status()
 
+            content = ""
             if stream:
                 # 如果是流式响应，需要拼接内容
-                content = ""
                 for line in response.iter_lines():
+                    logger.info(line)
                     if line:
                         # 移除"data: "前缀并解析JSON
                         line_text = line.decode("utf-8")
@@ -56,17 +58,17 @@ class SeededitTool(Tool):
                                 if chunk.get("choices") and chunk["choices"][0].get("delta", {}).get("content"):
                                     chunk_content = chunk["choices"][0]["delta"]["content"]
                                     content += chunk_content
-                                    print(chunk_content)
                             except json.JSONDecodeError:
-                                print(f"无法解析JSON: {json_str}")
-                answer = content
+                                logger.warning(f"无法解析JSON: {json_str}")
+
             else:
                 # 非流式响应直接获取内容
-                answer = response.json()["choices"][0]["message"]["content"]
+                content = response.json()["choices"][0]["message"]["content"]
 
-            print(answer)
-            image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", answer)
+            logger.info(content)
+            image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
+                # 如果image_urls[-1]中没有.png或者.jpg的文件名后缀，需要下载下来转换成base64格式给到下面的函数中 AI!
                 yield self.create_image_message(image_urls[-1])
                 return
             yield self.create_text_message("当前流量限制，请稍后再试")
