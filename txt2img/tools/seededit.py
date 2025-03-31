@@ -7,6 +7,7 @@ from typing import Any
 
 import requests
 from dify_plugin import Tool
+
 from dify_plugin.entities.tool import ToolInvokeMessage
 from yarl import URL
 
@@ -16,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class SeededitTool(Tool):
+    @staticmethod
+    def _is_image_url(url: str) -> bool:
+        """使用正则验证URL路径中包含图片扩展名"""
+        pattern = r'\.(png|jpe?g)(?=[^/]*$)'  # 匹配最后一个路径段的图片扩展名
+        return bool(re.search(pattern, url, re.IGNORECASE))
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         credentials = self.runtime.credentials
         openai_api_key = credentials.get("openai_api_key")
@@ -71,7 +77,7 @@ class SeededitTool(Tool):
             if image_urls:
                 last_url = image_urls[-1]
 
-                if not any(last_url.lower().endswith(ext) for ext in (".png", ".jpg", ".jpeg")):
+                if not self._is_image_url(last_url):
                     try:
                         # Download image and convert to base64
                         response = requests.get(last_url, timeout=30)
