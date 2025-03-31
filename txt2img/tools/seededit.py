@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import re
@@ -68,8 +69,23 @@ class SeededitTool(Tool):
             logger.info(content)
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
-                # 如果image_urls[-1]中没有.png或者.jpg的文件名后缀，需要下载下来转换成base64格式给到下面的函数中 AI!
-                yield self.create_image_message(image_urls[-1])
+                last_url = image_urls[-1]
+                
+                if not any(last_url.lower().endswith(ext) for ext in ('.png', '.jpg', '.jpeg')):
+                    try:
+                        # Download image and convert to base64
+                        response = requests.get(last_url, timeout=10)
+                        response.raise_for_status()
+                        content_type = response.headers.get('Content-Type', 'image/png')
+                        base64_image = base64.b64encode(response.content).decode('utf-8')
+                        data_uri = f"data:{content_type};base64,{base64_image}"
+                        yield self.create_image_message(data_uri)
+                    except Exception as e:
+                        logger.error(f"Failed to process image URL: {e}")
+                        yield self.create_text_message("图片处理失败，请尝试重新生成")
+                else:
+                    yield self.create_image_message(last_url)
+                
                 return
             yield self.create_text_message("当前流量限制，请稍后再试")
 
