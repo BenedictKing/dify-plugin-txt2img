@@ -91,18 +91,16 @@ class SeededitTool(Tool):
                         selected_ua = random.choice(user_agents)
 
                         # 构建更真实的请求头
-                        headers = {  # 这个headers是否应该针对图片调整  AI!
+                        headers = {
                             "User-Agent": selected_ua,
-                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
                             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
                             "Accept-Encoding": "gzip, deflate, br",
                             "Connection": "keep-alive",
-                            "Upgrade-Insecure-Requests": "1",
-                            "Sec-Fetch-Dest": "document",
-                            "Sec-Fetch-Mode": "navigate",
-                            "Sec-Fetch-Site": "none",
-                            "Sec-Fetch-User": "?1",
-                            "Cache-Control": "max-age=0",
+                            "Sec-Fetch-Dest": "image",
+                            "Sec-Fetch-Mode": "no-cors",
+                            "Sec-Fetch-Site": "cross-site",
+                            "Referer": "https://www.google.com/"
                         }
                         # Download image and convert to base64
                         response = requests.get(last_url, headers=headers, timeout=30)
