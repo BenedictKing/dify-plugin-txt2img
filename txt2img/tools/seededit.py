@@ -1,18 +1,17 @@
 import base64
 import json
 import logging
+import random
 import re
 from collections.abc import Generator
 from typing import Any
 
 import requests
 from dify_plugin import Tool
-
 from dify_plugin.entities.tool import ToolInvokeMessage
 from yarl import URL
 
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -20,8 +19,9 @@ class SeededitTool(Tool):
     @staticmethod
     def _is_image_url(url: str) -> bool:
         """使用正则验证URL路径中包含图片扩展名"""
-        pattern = r'\.(png|jpe?g)(?=[^/]*$)'  # 匹配最后一个路径段的图片扩展名
+        pattern = r"\.(png|jpe?g)(?=[^/]*$)"  # 匹配最后一个路径段的图片扩展名
         return bool(re.search(pattern, url, re.IGNORECASE))
+
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         credentials = self.runtime.credentials
         openai_api_key = credentials.get("openai_api_key")
@@ -78,9 +78,34 @@ class SeededitTool(Tool):
                 last_url = image_urls[-1]
 
                 if not self._is_image_url(last_url):
+                    logger.info(f"unknown image url: {last_url}")
                     try:
+                        # 随机选择一个User-Agent，模拟不同浏览器
+                        user_agents = [
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
+                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+                            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+                        ]
+                        selected_ua = random.choice(user_agents)
+
+                        # 构建更真实的请求头
+                        headers = {  # 这个headers是否应该针对图片调整  AI!
+                            "User-Agent": selected_ua,
+                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                            "Accept-Encoding": "gzip, deflate, br",
+                            "Connection": "keep-alive",
+                            "Upgrade-Insecure-Requests": "1",
+                            "Sec-Fetch-Dest": "document",
+                            "Sec-Fetch-Mode": "navigate",
+                            "Sec-Fetch-Site": "none",
+                            "Sec-Fetch-User": "?1",
+                            "Cache-Control": "max-age=0",
+                        }
                         # Download image and convert to base64
-                        response = requests.get(last_url, timeout=30)
+                        response = requests.get(last_url, headers=headers, timeout=30)
                         response.raise_for_status()
                         content_type = response.headers.get("Content-Type", "image/png")
                         base64_image = base64.b64encode(response.content).decode("utf-8")
