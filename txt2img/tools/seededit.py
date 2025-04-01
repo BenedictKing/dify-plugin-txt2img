@@ -39,7 +39,7 @@ class SeededitTool(Tool):
         ]
         if image_url:
             messages[0]["content"] = f"{image_url} {tool_parameters['instruction']}"
-
+        # 加一个图片格式的选项 同时修改 seededit.yaml 选择图片url是放在提示词里 还是下面这样用vision格式 messages = [{        "role": "user",        "content": [            {                "type": "text",                "text": "城堡上方有小精灵飞舞",            },            {                "type": "image_url",                "image_url": {                    "url": "https://dify.diyai.diy/files/tools/f9fbdced-af9f-4c46-a4d1-d4c3fea78cb8.png?timestamp=1743468104&nonce=4adc1b1aae273b48d445385f0c4ddfc2&sign=WUz_d5ehBngQH2vca88DtqkxILvR6ycG3UUI0pJyFbI="                },            },        ],    }] AI!
         try:
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
