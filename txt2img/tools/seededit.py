@@ -43,8 +43,9 @@ class SeededitTool(Tool):
             image_format = tool_parameters.get("image_format", "text")  # Default to text format
 
             if image_format == "vision":
-                messages[0]["content"] = [{"type": "text", "text": tool_parameters["instruction"]}, {"type": "image_url", "image_url": {"url": image_url}}]
-                # 这里也要同样处理 AI!
+                messages[0]["content"] = [{"type": "text", "text": tool_parameters["instruction"]}]
+                for image in images:
+                    messages[0]["content"].append({"type": "image_url", "image_url": {"url": image.url}})
             else:  # Default text format
                 # Concatenate all image URLs with instruction
                 image_urls = " ".join([image.url for image in images])
