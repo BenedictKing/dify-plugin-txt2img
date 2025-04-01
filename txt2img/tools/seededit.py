@@ -28,7 +28,9 @@ class SeededitTool(Tool):
         openai_base_url = credentials.get("openai_base_url")
         openai_url = str(URL(openai_base_url) / "v1/chat/completions")
 
-        image_url = tool_parameters.get("image_url")
+        image_files = tool_parameters.get("image_files")
+        images = [i for i in image_files if i.type == "image"]
+
         model = tool_parameters.get("model", "gpt-4o-all")
         stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
         messages = [
@@ -37,24 +39,14 @@ class SeededitTool(Tool):
                 "content": tool_parameters["instruction"],
             },
         ]
-        if image_url:
+        if images:
             image_format = tool_parameters.get("image_format", "text")  # Default to text format
-            
+
             if image_format == "vision":
-                messages[0]["content"] = [
-                    {
-                        "type": "text",
-                        "text": tool_parameters["instruction"]
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image_url
-                        }
-                    }
-                ]
+                messages[0]["content"] = [{"type": "text", "text": tool_parameters["instruction"]}, {"type": "image_url", "image_url": {"url": image_url}}]
             else:  # Default text format
                 messages[0]["content"] = f"{image_url} {tool_parameters['instruction']}"
+                # 修改为适合多个图像的代码 images中的每一个image.url是需要写入的参数 AI!
         try:
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
