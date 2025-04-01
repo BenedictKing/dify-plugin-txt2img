@@ -39,9 +39,9 @@ class SeededitTool(Tool):
                 "content": tool_parameters["instruction"],
             },
         ]
+        image_format = tool_parameters.get("image_format", "text")  # Default to text format
+        # 把images中的image.url和tool_parameters["instruction"]中的url都合并到一个数组中 AI!
         if images:
-            image_format = tool_parameters.get("image_format", "text")  # Default to text format
-
             if image_format == "vision":
                 messages[0]["content"] = [{"type": "text", "text": tool_parameters["instruction"]}]
                 for image in images:
