@@ -1,9 +1,14 @@
-import base64
+from base64 import b64decode
 import json
 import logging
+import os
 import random
 import re
+import tempfile
+import time
+import uuid
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -11,7 +16,7 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from yarl import URL
 
-
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -100,15 +105,22 @@ class SeededitTool(Tool):
                             "Sec-Fetch-Dest": "image",
                             "Sec-Fetch-Mode": "no-cors",
                             "Sec-Fetch-Site": "cross-site",
-                            "Referer": "https://www.google.com/"
+                            "Referer": "https://www.google.com/",
+                        }
+                        # 添加必要的Cookie参数，减少被检测的可能性
+                        cookies = {
+                            "appmsglist_action_3941382959": "card",  # 一些随机的Cookie值
+                            "appmsglist_action_3941382968": "card",
+                            "pac_uid": f"{int(time.time())}_f{random.randint(10000, 99999)}",
+                            "rewardsn": "",
+                            "wxtokenkey": f"{random.randint(100000, 999999)}",
                         }
                         # Download image and convert to base64
-                        response = requests.get(last_url, headers=headers, timeout=30)
+                        response = requests.get(last_url, headers=headers, cookies=cookies, timeout=30)
                         response.raise_for_status()
                         content_type = response.headers.get("Content-Type", "image/png")
-                        base64_image = base64.b64encode(response.content).decode("utf-8")
-                        data_uri = f"data:{content_type};base64,{base64_image}"
-                        yield self.create_image_message(data_uri)
+
+                        yield self.create_blob_message(blob=response.content, meta={"mime_type": content_type})
                     except Exception as e:
                         logger.error(f"Failed to process image URL: {e}")
                         yield self.create_text_message("图片处理失败，请尝试重新生成")

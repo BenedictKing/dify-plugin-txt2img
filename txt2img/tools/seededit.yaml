@@ -43,8 +43,8 @@ parameters:
     llm_description: "The URL of the image to be edited"
   - name: stream
     type: select
-    form: llm
-    required: false
+    form: form
+    required: true
     default: false
     options:
       - label:
@@ -66,20 +66,19 @@ parameters:
     llm_description: "Enable real-time streaming of partial results"
   - name: model
     type: select
-    form: llm
-    required: false
+    form: form
+    required: true
     default: gpt-4o-all
     options:
       - label:
           en_US: "gpt-4o-all"
-          zh_Hans: "gpt-4o-all"
-          pt_BR: "gpt-4o-all" 
         value: gpt-4o-all
       - label:
           en_US: "gpt-4o-image"
-          zh_Hans: "gpt-4o-image"
-          pt_BR: "gpt-4o-image"
         value: gpt-4o-image
+      - label:
+          en_US: "gpt-4o-image-vip"
+        value: gpt-4o-image-vip
     label:
       en_US: Model Version
       zh_Hans: 模型版本
