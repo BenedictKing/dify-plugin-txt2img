@@ -28,19 +28,20 @@ parameters:
       zh_Hans: "详细的编辑指令（例如：'添加墨镜并将衬衫颜色改为红色'）"
       pt_BR: "Instruções detalhadas de edição (ex: 'Adicionar óculos escuros e mudar cor da camisa para vermelho')"
     llm_description: "Natural language editing instructions"
-  - name: image_url
-    type: string
+  - name: images
+    type: files
     form: llm
     required: false
     label:
-      en_US: Image URL
-      zh_Hans: 图片链接
+      en_US: Image files
+      zh_Hans: 图片文件
       pt_BR: URL da Imagem
     human_description:
       en_US: "Publicly accessible image URL (e.g. https://example.com/image.jpg)"
       zh_Hans: "可公开访问的图片链接（例如 https://example.com/image.jpg）"
       pt_BR: "URL de imagem publicamente acessível (ex. https://example.com/image.jpg)"
     llm_description: "The URL of the image to be edited"
+    #修改label和human_description 现在的这一项是图片文件 AI!
   - name: stream
     type: select
     form: form
