@@ -88,3 +88,28 @@ parameters:
       zh_Hans: "选择AI模型版本 (gpt-4o-all 或 gpt-4o-image)"
       pt_BR: "Selecione a versão do modelo AI (gpt-4o-all ou gpt-4o-image)"
     llm_description: "The version of the AI model to use for generation"
+  - name: image_format
+    type: select
+    form: form
+    required: true
+    default: text
+    options:
+      - label:
+          en_US: "Text Prompt"
+          zh_Hans: "文本提示"
+          pt_BR: "Prompt de Texto"
+        value: text
+      - label:
+          en_US: "Vision Format"
+          zh_Hans: "视觉格式"
+          pt_BR: "Formato Visual"
+        value: vision
+    label:
+      en_US: Image Format
+      zh_Hans: 图片格式
+      pt_BR: Formato da Imagem
+    human_description:
+      en_US: "Choose how to include the image (text prompt or vision format)"
+      zh_Hans: "选择图片包含方式（文本提示或视觉格式）"
+      pt_BR: "Escolha como incluir a imagem (prompt de texto ou formato visual)"
+    llm_description: "How to include the image reference in the request"
