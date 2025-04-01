@@ -45,8 +45,9 @@ class SeededitTool(Tool):
             if image_format == "vision":
                 messages[0]["content"] = [{"type": "text", "text": tool_parameters["instruction"]}, {"type": "image_url", "image_url": {"url": image_url}}]
             else:  # Default text format
-                messages[0]["content"] = f"{image_url} {tool_parameters['instruction']}"
-                # 修改为适合多个图像的代码 images中的每一个image.url是需要写入的参数 AI!
+                # Concatenate all image URLs with instruction
+                image_urls = " ".join([image.url for image in images])
+                messages[0]["content"] = f"{image_urls} {tool_parameters['instruction']}"
         try:
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
