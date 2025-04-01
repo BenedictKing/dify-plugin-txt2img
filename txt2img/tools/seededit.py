@@ -40,16 +40,27 @@ class SeededitTool(Tool):
             },
         ]
         image_format = tool_parameters.get("image_format", "text")  # Default to text format
-        # 把images中的image.url和tool_parameters["instruction"]中的url都合并到一个数组中 AI!
-        if images:
-            if image_format == "vision":
-                messages[0]["content"] = [{"type": "text", "text": tool_parameters["instruction"]}]
-                for image in images:
-                    messages[0]["content"].append({"type": "image_url", "image_url": {"url": image.url}})
-            else:  # Default text format
-                # Concatenate all image URLs with instruction
-                image_urls = " ".join([image.url for image in images])
-                messages[0]["content"] = f"{image_urls} {tool_parameters['instruction']}"
+        
+        # Extract URLs from instruction text
+        instruction_text = tool_parameters["instruction"]
+        instruction_urls = re.findall(r'https?://\S+', instruction_text)
+        image_urls_from_instruction = [url for url in instruction_urls if self._is_image_url(url)]
+
+        # Combine all image sources (uploaded files + URLs in instruction)
+        uploaded_image_urls = [image.url for image in images] if images else []
+        all_image_urls = uploaded_image_urls + image_urls_from_instruction
+
+        if image_format == "vision":
+            # Clean instruction text and build vision format
+            cleaned_instruction = re.sub(r'https?://\S+', '', instruction_text).strip()
+            content = [{"type": "text", "text": cleaned_instruction}]
+            for url in all_image_urls:
+                content.append({"type": "image_url", "image_url": {"url": url}})
+            messages[0]["content"] = content
+        else:
+            # Text format - preserve original structure with URLs
+            url_prefix = ' '.join(all_image_urls)
+            messages[0]["content"] = f"{url_prefix} {instruction_text}".strip()
         try:
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
