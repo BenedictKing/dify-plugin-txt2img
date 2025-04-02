@@ -40,26 +40,26 @@ class SeededitTool(Tool):
             },
         ]
         image_format = tool_parameters.get("image_format", "text")  # Default to text format
-        
+
         # Extract URLs from instruction text
         instruction_text = tool_parameters["instruction"]
-        instruction_urls = re.findall(r'https?://\S+', instruction_text)
-        image_urls_from_instruction = [url for url in instruction_urls if self._is_image_url(url)]
+        instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
+        # image_urls_from_instruction = [url for url in instruction_urls if self._is_image_url(url)]
 
         # Combine all image sources (uploaded files + URLs in instruction)
         uploaded_image_urls = [image.url for image in images] if images else []
-        all_image_urls = uploaded_image_urls + image_urls_from_instruction
+        all_image_urls = uploaded_image_urls + instruction_urls
 
         if image_format == "vision":
             # Clean instruction text and build vision format
-            cleaned_instruction = re.sub(r'https?://\S+', '', instruction_text).strip()
+            cleaned_instruction = re.sub(r"https?://\S+", "", instruction_text).strip()
             content = [{"type": "text", "text": cleaned_instruction}]
             for url in all_image_urls:
                 content.append({"type": "image_url", "image_url": {"url": url}})
             messages[0]["content"] = content
         else:
             # Text format - preserve original structure with URLs
-            url_prefix = ' '.join(all_image_urls)
+            url_prefix = " ".join(all_image_urls)
             messages[0]["content"] = f"{url_prefix} {instruction_text}".strip()
         try:
             # 发送API请求
@@ -86,12 +86,14 @@ class SeededitTool(Tool):
                                 if chunk.get("choices") and chunk["choices"][0].get("delta", {}).get("content"):
                                     chunk_content = chunk["choices"][0]["delta"]["content"]
                                     content += chunk_content
+                                    yield self.create_text_message(chunk_content)
                             except json.JSONDecodeError:
                                 logger.warning(f"无法解析JSON: {json_str}")
 
             else:
                 # 非流式响应直接获取内容
                 content = response.json()["choices"][0]["message"]["content"]
+                yield self.create_text_message(content)
 
             logger.info(content)
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
