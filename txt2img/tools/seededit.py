@@ -49,6 +49,7 @@ class SeededitTool(Tool):
         # Combine all image sources (uploaded files + URLs in instruction)
         uploaded_image_urls = [image.url for image in images] if images else []
         all_image_urls = uploaded_image_urls + instruction_urls
+        # 给all_image_urls加一个去重 保留原有顺序 AI!
 
         if image_format == "vision":
             # Clean instruction text and build vision format
