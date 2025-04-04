@@ -95,9 +95,9 @@ credentials_for_provider:
       zh_Hans: "服务端点"
       pt_BR: "Endpoint"
     placeholder: 
-      en_US: "e.g. tos.cn-beijing.volces.com"
-      zh_Hans: "例如：tos.cn-beijing.volces.com"
-      pt_BR: "ex: tos.cn-beijing.volces.com"
+      en_US: "e.g. https://tos.cn-beijing.volces.com"
+      zh_Hans: "例如：https://tos.cn-beijing.volces.com"
+      pt_BR: "ex: https://tos.cn-beijing.volces.com"
     type: text-input
     required: true
 

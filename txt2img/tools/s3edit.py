@@ -56,14 +56,14 @@ class S3editTool(Tool):
 
         return headers, cookies
 
-    def save_tos(self, credentials: dict, original_url: str, bucket_name: str) -> str:
+    def save_tos(self, credentials: dict, original_url: str) -> str:
         """Upload external resource to TOS and return new URL"""
         import tos
 
         # Download original resource
         headers, cookies = self._generate_headers()
-        response = requests.get(original_url, headers=headers, cookies=cookies, timeout=30)
         try:
+            response = requests.get(original_url, headers=headers, cookies=cookies, timeout=60)
             response.raise_for_status()
         except Exception as e:
             logger.error(f"Failed to download resource from {original_url}: {e}")
@@ -75,19 +75,25 @@ class S3editTool(Tool):
         file_ext = extension_map.get(content_type.split(";")[0].lower(), "png")  # Handle charset params
         object_key = f"s3edit/{uuid.uuid4()}.{file_ext}"
 
+        bucket_name = credentials["VOLCENGINE_TOS_BUCKET_NAME"]
+
         # Initialize TOS client
         client = tos.TosClientV2(
             ak=credentials["VOLCENGINE_TOS_ACCESS_KEY"],
             sk=credentials["VOLCENGINE_TOS_SECRET_KEY"],
-            endpoint=str(URL(credentials["VOLCENGINE_TOS_ENDPOINT"]).host),
+            endpoint=credentials["VOLCENGINE_TOS_ENDPOINT"],
             region=credentials["VOLCENGINE_TOS_REGION"],
         )
 
         # Upload to TOS
-        client.put_object(bucket=bucket_name, key=object_key, content=response.content)
+        try:
+            client.put_object(bucket=bucket_name, key=object_key, content=response.content)
+        except Exception as e:
+            logger.error(f"Failed to save tos: {e}")
+            return original_url  # Return original URL on failure
 
         # Return new TOS URL
-        return f"https://{bucket_name}.{credentials['VOLCENGINE_TOS_ENDPOINT']}/{object_key}"
+        return f"https://{bucket_name}.{str(URL(credentials['VOLCENGINE_TOS_ENDPOINT']).host)}/{object_key}"
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         credentials = self.runtime.credentials
@@ -125,7 +131,7 @@ class S3editTool(Tool):
             else:
                 try:
                     # Save to TOS and get new URL
-                    new_url = self.save_tos(credentials=credentials, original_url=url, bucket_name=credentials["VOLCENGINE_TOS_BUCKET_NAME"])
+                    new_url = self.save_tos(credentials=credentials, original_url=url)
                     processed_urls.append(new_url)
                 except Exception as e:
                     logger.error(f"Failed to process URL {url}: {e}")

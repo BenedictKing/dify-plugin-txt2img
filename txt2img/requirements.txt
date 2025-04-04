@@ -1,3 +1,4 @@
 dify_plugin~=0.0.1b67
 openai>=1.65.2
 requests>=2.32.3
+tos>=2.8.1
