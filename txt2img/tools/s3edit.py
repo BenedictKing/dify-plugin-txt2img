@@ -32,7 +32,7 @@ class S3editTool(Tool):
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
         ]
-        
+
         headers = {
             "User-Agent": random.choice(user_agents),
             "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
@@ -44,7 +44,7 @@ class S3editTool(Tool):
             "Sec-Fetch-Site": "cross-site",
             "Referer": "https://www.google.com/",
         }
-        
+
         cookies = {
             "appmsglist_action_3941382959": "card",
             "appmsglist_action_3941382968": "card",
@@ -52,7 +52,7 @@ class S3editTool(Tool):
             "rewardsn": "",
             "wxtokenkey": f"{random.randint(100000, 999999)}",
         }
-        
+
         return headers, cookies
 
     def save_tos(self, credentials: dict, original_url: str, bucket_name: str) -> str:
@@ -65,8 +65,8 @@ class S3editTool(Tool):
         response.raise_for_status()
 
         # Generate unique object key
-        file_ext = original_url.split(".")[-1].split("?")[0][:4]
-        object_key = f"{int(time.time())}_{random.randint(1000, 9999)}_{random.randint(1000, 9999)}.{file_ext}"
+        file_ext = "png"
+        object_key = f"{int(time.time())}_{random.randint(1000, 9999)}.{file_ext}"  # int(time.time())改为uuid AI!
 
         # Initialize TOS client
         client = tos.TosClientV2(
@@ -77,9 +77,7 @@ class S3editTool(Tool):
         )
 
         # Upload to TOS
-        client.put_object(
-            bucket=bucket_name, key=object_key, content=response.content, headers={"Content-Type": response.headers.get("Content-Type", "application/octet-stream")}
-        )
+        client.put_object(bucket=bucket_name, key=object_key, content=response.content)
 
         # Return new TOS URL
         return f"https://{bucket_name}.{credentials['VOLCENGINE_TOS_ENDPOINT']}/{object_key}"
