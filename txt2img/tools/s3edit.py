@@ -66,7 +66,14 @@ class S3editTool(Tool):
         response.raise_for_status()
 
         # Generate unique object key
-        file_ext = "png"  # 文件后缀从response的元数据中推测 默认为png AI!
+        content_type = response.headers.get('Content-Type', 'image/png').split('/')[-1]
+        extension_map = {
+            'jpeg': 'jpg',
+            'png': 'png',
+            'webp': 'webp',
+            'gif': 'gif'
+        }
+        file_ext = extension_map.get(content_type.split(';')[0].lower(), 'png')  # Handle charset params
         object_key = f"{uuid.uuid4()}.{file_ext}"
 
         # Initialize TOS client
