@@ -63,17 +63,12 @@ class S3editTool(Tool):
         # Download original resource
         headers, cookies = self._generate_headers()
         response = requests.get(original_url, headers=headers, cookies=cookies, timeout=30)
-        response.raise_for_status()
+        response.raise_for_status()  # 获取失败就返回原始url AI!
 
         # Generate unique object key
-        content_type = response.headers.get('Content-Type', 'image/png').split('/')[-1]
-        extension_map = {
-            'jpeg': 'jpg',
-            'png': 'png',
-            'webp': 'webp',
-            'gif': 'gif'
-        }
-        file_ext = extension_map.get(content_type.split(';')[0].lower(), 'png')  # Handle charset params
+        content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
+        extension_map = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
+        file_ext = extension_map.get(content_type.split(";")[0].lower(), "png")  # Handle charset params
         object_key = f"{uuid.uuid4()}.{file_ext}"
 
         # Initialize TOS client
