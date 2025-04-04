@@ -66,7 +66,7 @@ class S3editTool(Tool):
         response.raise_for_status()
 
         # Generate unique object key
-        file_ext = "png"
+        file_ext = "png"  # 文件后缀从response的元数据中推测 默认为png AI!
         object_key = f"{uuid.uuid4()}.{file_ext}"
 
         # Initialize TOS client
