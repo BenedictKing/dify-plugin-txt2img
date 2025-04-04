@@ -63,7 +63,11 @@ class S3editTool(Tool):
         # Download original resource
         headers, cookies = self._generate_headers()
         response = requests.get(original_url, headers=headers, cookies=cookies, timeout=30)
-        response.raise_for_status()  # 获取失败就返回原始url AI!
+        try:
+            response.raise_for_status()
+        except Exception as e:
+            logger.error(f"Failed to download resource from {original_url}: {e}")
+            return original_url  # Return original URL on failure
 
         # Generate unique object key
         content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
