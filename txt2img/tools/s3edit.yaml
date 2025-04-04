@@ -45,7 +45,7 @@ parameters:
     type: select
     form: form
     required: true
-    default: false
+    default: true
     options:
       - label:
           en_US: "no"
@@ -68,7 +68,7 @@ parameters:
     type: select
     form: form
     required: true
-    default: gpt-4o-all
+    default: gpt-4o-image-vip
     options:
       - label:
           en_US: "gpt-4o-all"
@@ -113,4 +113,3 @@ parameters:
       zh_Hans: "选择图片包含方式（文本提示或视觉格式）"
       pt_BR: "Escolha como incluir a imagem (prompt de texto ou formato visual)"
     llm_description: "How to include the image reference in the request"
-  #添加几个输入选项  VOLCENGINE_TOS_BUCKET_NAME，VOLCENGINE_TOS_ACCESS_KEY,VOLCENGINE_TOS_SECRET_KEY,VOLCENGINE_TOS_ENDPOINT,VOLCENGINE_TOS_REGION 都是字符串类型 AI!

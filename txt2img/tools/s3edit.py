@@ -73,13 +73,13 @@ class S3editTool(Tool):
         content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
         extension_map = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
         file_ext = extension_map.get(content_type.split(";")[0].lower(), "png")  # Handle charset params
-        object_key = f"{uuid.uuid4()}.{file_ext}"
+        object_key = f"s3edit/{uuid.uuid4()}.{file_ext}"
 
         # Initialize TOS client
         client = tos.TosClientV2(
             ak=credentials["VOLCENGINE_TOS_ACCESS_KEY"],
             sk=credentials["VOLCENGINE_TOS_SECRET_KEY"],
-            endpoint=credentials["VOLCENGINE_TOS_ENDPOINT"],
+            endpoint=credentials["VOLCENGINE_TOS_ENDPOINT"],  # VOLCENGINE_TOS_ENDPOINT实际内容为https://tos-cn-hongkong.volces.com  修改下面的调用 也修改 s3edit.yaml AI!
             region=credentials["VOLCENGINE_TOS_REGION"],
         )
 
