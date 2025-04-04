@@ -22,12 +22,46 @@ class S3editTool(Tool):
         pattern = r"\.(png|jpe?g)(?=[^/]*$)"  # 匹配最后一个路径段的图片扩展名
         return bool(re.search(pattern, url, re.IGNORECASE))
 
+    @staticmethod
+    def _generate_headers() -> tuple[dict, dict]:
+        """Generate browser-like headers and cookies for requests"""
+        user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+        ]
+        
+        headers = {
+            "User-Agent": random.choice(user_agents),
+            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Sec-Fetch-Dest": "image",
+            "Sec-Fetch-Mode": "no-cors",
+            "Sec-Fetch-Site": "cross-site",
+            "Referer": "https://www.google.com/",
+        }
+        
+        cookies = {
+            "appmsglist_action_3941382959": "card",
+            "appmsglist_action_3941382968": "card",
+            "pac_uid": f"{int(time.time())}_f{random.randint(10000, 99999)}",
+            "rewardsn": "",
+            "wxtokenkey": f"{random.randint(100000, 999999)}",
+        }
+        
+        return headers, cookies
+
     def save_tos(self, credentials: dict, original_url: str, bucket_name: str) -> str:
         """Upload external resource to TOS and return new URL"""
         import tos
 
         # Download original resource
-        response = requests.get(original_url, timeout=30)
+        headers, cookies = self._generate_headers()
+        response = requests.get(original_url, headers=headers, cookies=cookies, timeout=30)
         response.raise_for_status()
 
         # Generate unique object key
@@ -144,37 +178,7 @@ class S3editTool(Tool):
                 if not self._is_image_url(last_url):
                     logger.info(f"unknown image url: {last_url}")
                     try:
-                        # 随机选择一个User-Agent，模拟不同浏览器
-                        user_agents = [
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
-                            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-                        ]
-                        selected_ua = random.choice(user_agents)
-
-                        # 构建更真实的请求头
-                        headers = {
-                            "User-Agent": selected_ua,
-                            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
-                            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                            "Accept-Encoding": "gzip, deflate, br",
-                            "Connection": "keep-alive",
-                            "Sec-Fetch-Dest": "image",
-                            "Sec-Fetch-Mode": "no-cors",
-                            "Sec-Fetch-Site": "cross-site",
-                            "Referer": "https://www.google.com/",
-                        }
-                        # 生成headers独立成一个函数 在save_tos中也可以调用 AI!
-                        # 添加必要的Cookie参数，减少被检测的可能性
-                        cookies = {
-                            "appmsglist_action_3941382959": "card",  # 一些随机的Cookie值
-                            "appmsglist_action_3941382968": "card",
-                            "pac_uid": f"{int(time.time())}_f{random.randint(10000, 99999)}",
-                            "rewardsn": "",
-                            "wxtokenkey": f"{random.randint(100000, 999999)}",
-                        }
+                        headers, cookies = self._generate_headers()
                         # Download image and convert to base64
                         response = requests.get(last_url, headers=headers, cookies=cookies, timeout=30)
                         response.raise_for_status()
