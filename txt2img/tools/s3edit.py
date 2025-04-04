@@ -25,15 +25,15 @@ class S3editTool(Tool):
     def save_tos(self, credentials: dict, original_url: str, bucket_name: str) -> str:
         """Upload external resource to TOS and return new URL"""
         import tos
-        
+
         # Download original resource
         response = requests.get(original_url, timeout=30)
         response.raise_for_status()
-        
+
         # Generate unique object key
-        file_ext = original_url.split('.')[-1].split('?')[0][:4]
-        object_key = f"{int(time.time())}_{random.randint(1000,9999)}.{file_ext}"
-        
+        file_ext = original_url.split(".")[-1].split("?")[0][:4]
+        object_key = f"{int(time.time())}_{random.randint(1000, 9999)}_{random.randint(1000, 9999)}.{file_ext}"
+
         # Initialize TOS client
         client = tos.TosClientV2(
             ak=credentials["VOLCENGINE_TOS_ACCESS_KEY"],
@@ -41,15 +41,12 @@ class S3editTool(Tool):
             endpoint=credentials["VOLCENGINE_TOS_ENDPOINT"],
             region=credentials["VOLCENGINE_TOS_REGION"],
         )
-        
+
         # Upload to TOS
         client.put_object(
-            bucket=bucket_name,
-            key=object_key,
-            content=response.content,
-            headers={'Content-Type': response.headers.get('Content-Type', 'application/octet-stream')}
+            bucket=bucket_name, key=object_key, content=response.content, headers={"Content-Type": response.headers.get("Content-Type", "application/octet-stream")}
         )
-        
+
         # Return new TOS URL
         return f"https://{bucket_name}.{credentials['VOLCENGINE_TOS_ENDPOINT']}/{object_key}"
 
@@ -89,11 +86,7 @@ class S3editTool(Tool):
             else:
                 try:
                     # Save to TOS and get new URL
-                    new_url = self.save_tos(
-                        credentials=credentials,
-                        original_url=url,
-                        bucket_name=credentials["VOLCENGINE_TOS_BUCKET_NAME"]
-                    )
+                    new_url = self.save_tos(credentials=credentials, original_url=url, bucket_name=credentials["VOLCENGINE_TOS_BUCKET_NAME"])
                     processed_urls.append(new_url)
                 except Exception as e:
                     logger.error(f"Failed to process URL {url}: {e}")
@@ -173,6 +166,7 @@ class S3editTool(Tool):
                             "Sec-Fetch-Site": "cross-site",
                             "Referer": "https://www.google.com/",
                         }
+                        # 生成headers独立成一个函数 在save_tos中也可以调用 AI!
                         # 添加必要的Cookie参数，减少被检测的可能性
                         cookies = {
                             "appmsglist_action_3941382959": "card",  # 一些随机的Cookie值
