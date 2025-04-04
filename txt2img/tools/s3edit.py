@@ -3,6 +3,7 @@ import logging
 import random
 import re
 import time
+import uuid
 from collections.abc import Generator
 from typing import Any
 
@@ -66,7 +67,7 @@ class S3editTool(Tool):
 
         # Generate unique object key
         file_ext = "png"
-        object_key = f"{int(time.time())}_{random.randint(1000, 9999)}.{file_ext}"  # int(time.time())改为uuid AI!
+        object_key = f"{uuid.uuid4()}.{file_ext}"
 
         # Initialize TOS client
         client = tos.TosClientV2(
