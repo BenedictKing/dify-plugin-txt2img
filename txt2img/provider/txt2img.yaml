@@ -16,6 +16,7 @@ tools:
   - tools/recraftv3.yaml
   - tools/dalle3.yaml
   - tools/seededit.yaml
+  - tools/s3edit.yaml
 extra:
   python:
     source: provider/txt2img.py
@@ -44,3 +45,73 @@ credentials_for_provider:
       zh_Hans: 请输入你的 OpenAI base URL (不带 /v1 结尾)
     required: false
     type: text-input
+    #修改下面这几项 AI!
+  VOLCENGINE_TOS_BUCKET_NAME:
+    type: string
+    form: form
+    required: true
+    label:
+      en_US: Bucket Name
+      zh_Hans: 存储桶名称
+      pt_BR: Nome do Bucket
+    human_description:
+      en_US: "VolcEngine TOS bucket name"
+      zh_Hans: "火山引擎对象存储桶名称"
+      pt_BR: "Nome do bucket de armazenamento de objetos do VolcEngine"
+    llm_description: "TOS bucket name for storage operations"
+
+  - name: VOLCENGINE_TOS_ACCESS_KEY
+    type: string
+    form: form
+    required: true
+    label:
+      en_US: Access Key
+      zh_Hans: 访问密钥
+      pt_BR: Chave de Acesso
+    human_description:
+      en_US: "VolcEngine TOS access key credential"
+      zh_Hans: "火山引擎对象存储访问密钥"
+      pt_BR: "Credencial de chave de acesso do VolcEngine TOS"
+    llm_description: "API access key for TOS authentication"
+
+  - name: VOLCENGINE_TOS_SECRET_KEY
+    type: string
+    form: form
+    required: true
+    label:
+      en_US: Secret Key
+      zh_Hans: 安全密钥
+      pt_BR: Chave Secreta
+    human_description:
+      en_US: "VolcEngine TOS secret key credential"
+      zh_Hans: "火山引擎对象存储安全密钥"
+      pt_BR: "Credencial de chave secreta do VolcEngine TOS"
+    llm_description: "API secret key for TOS authentication"
+
+  - name: VOLCENGINE_TOS_ENDPOINT
+    type: string
+    form: form
+    required: true
+    label:
+      en_US: Endpoint
+      zh_Hans: 服务端点
+      pt_BR: Endpoint
+    human_description:
+      en_US: "VolcEngine TOS service endpoint URL"
+      zh_Hans: "火山引擎对象存储服务端点URL"
+      pt_BR: "URL do endpoint de serviço do VolcEngine TOS"
+    llm_description: "Service endpoint URL for TOS API"
+
+  - name: VOLCENGINE_TOS_REGION
+    type: string
+    form: form
+    required: true
+    label:
+      en_US: Region
+      zh_Hans: 服务区域
+      pt_BR: Região
+    human_description:
+      en_US: "VolcEngine TOS service region"
+      zh_Hans: "火山引擎对象存储服务区域"
+      pt_BR: "Região de serviço do VolcEngine TOS"
+    llm_description: "Service region for TOS operations"
