@@ -1,0 +1,116 @@
+identity:
+  name: s3edit
+  author: king
+  label:
+    en_US: s3edit
+    zh_Hans: s3edit
+    pt_BR: s3edit
+description:
+  human:
+    en_US: openai seededit with s3 bucket
+    zh_Hans: openai seededit with s3 bucket
+    pt_BR: openai seededit with s3 bucket
+  llm: openai seededit with s3 bucket
+extra:
+  python:
+    source: tools/s3edit.py
+parameters:
+  - name: instruction
+    type: string
+    form: llm
+    required: true
+    label:
+      en_US: Edit Instruction
+      zh_Hans: 编辑指令
+      pt_BR: Instrução de Edição
+    human_description:
+      en_US: "Detailed editing instructions (e.g. 'Add sunglasses and change shirt color to red')"
+      zh_Hans: "详细的编辑指令（例如：'添加墨镜并将衬衫颜色改为红色'）"
+      pt_BR: "Instruções detalhadas de edição (ex: 'Adicionar óculos escuros e mudar cor da camisa para vermelho')"
+    llm_description: "Natural language editing instructions"
+  - name: image_files
+    type: files
+    form: llm
+    required: false
+    label:
+      en_US: Image files
+      zh_Hans: 图片文件
+      pt_BR: Arquivos de Imagem
+    human_description:
+      en_US: "Upload image files for editing (supported formats: PNG, JPEG)"
+      zh_Hans: "上传需要编辑的图片文件（支持格式：PNG、JPEG）"
+      pt_BR: "Faça upload de arquivos de imagem para edição (formatos suportados: PNG, JPEG)"
+    llm_description: "The image files to be edited"
+  - name: stream
+    type: select
+    form: form
+    required: true
+    default: false
+    options:
+      - label:
+          en_US: "no"
+          zh_Hans: "否"
+        value: false
+      - label:
+          en_US: "yes"
+          zh_Hans: "是"
+        value: true
+    label:
+      en_US: Stream Output
+      zh_Hans: 流式输出
+      pt_BR: Saída em Fluxo
+    human_description:
+      en_US: "Enable real-time streaming of partial results"
+      zh_Hans: "启用实时流式输出部分结果"
+      pt_BR: "Ativar transmissão em tempo real de resultados parciais"
+    llm_description: "Enable real-time streaming of partial results"
+  - name: model
+    type: select
+    form: form
+    required: true
+    default: gpt-4o-all
+    options:
+      - label:
+          en_US: "gpt-4o-all"
+        value: gpt-4o-all
+      - label:
+          en_US: "gpt-4o-image"
+        value: gpt-4o-image
+      - label:
+          en_US: "gpt-4o-image-vip"
+        value: gpt-4o-image-vip
+    label:
+      en_US: Model Version
+      zh_Hans: 模型版本
+      pt_BR: Versão do Modelo
+    human_description:
+      en_US: "Select AI model version (gpt-4o-all or gpt-4o-image)"
+      zh_Hans: "选择AI模型版本 (gpt-4o-all 或 gpt-4o-image)"
+      pt_BR: "Selecione a versão do modelo AI (gpt-4o-all ou gpt-4o-image)"
+    llm_description: "The version of the AI model to use for generation"
+  - name: image_format
+    type: select
+    form: form
+    required: true
+    default: text
+    options:
+      - label:
+          en_US: "Text Prompt"
+          zh_Hans: "文本提示"
+          pt_BR: "Prompt de Texto"
+        value: text
+      - label:
+          en_US: "Vision Format"
+          zh_Hans: "视觉格式"
+          pt_BR: "Formato Visual"
+        value: vision
+    label:
+      en_US: Image Format
+      zh_Hans: 图片格式
+      pt_BR: Formato da Imagem
+    human_description:
+      en_US: "Choose how to include the image (text prompt or vision format)"
+      zh_Hans: "选择图片包含方式（文本提示或视觉格式）"
+      pt_BR: "Escolha como incluir a imagem (prompt de texto ou formato visual)"
+    llm_description: "How to include the image reference in the request"
+  
