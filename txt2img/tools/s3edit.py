@@ -79,7 +79,7 @@ class S3editTool(Tool):
         client = tos.TosClientV2(
             ak=credentials["VOLCENGINE_TOS_ACCESS_KEY"],
             sk=credentials["VOLCENGINE_TOS_SECRET_KEY"],
-            endpoint=credentials["VOLCENGINE_TOS_ENDPOINT"],  # VOLCENGINE_TOS_ENDPOINT实际内容为https://tos-cn-hongkong.volces.com  修改下面的调用 也修改 s3edit.yaml AI!
+            endpoint=str(URL(credentials["VOLCENGINE_TOS_ENDPOINT"]).host),
             region=credentials["VOLCENGINE_TOS_REGION"],
         )
 
