@@ -22,6 +22,17 @@ class S3editTool(Tool):
         pattern = r"\.(png|jpe?g)(?=[^/]*$)"  # 匹配最后一个路径段的图片扩展名
         return bool(re.search(pattern, url, re.IGNORECASE))
 
+    def save_tos(credentials: dict, url: str) -> str:
+        import tos
+
+        bucket_name = credentials.get("VOLCENGINE_TOS_BUCKET_NAME", "")
+        client = tos.TosClientV2(
+            ak=credentials.get("VOLCENGINE_TOS_ACCESS_KEY"),
+            sk=credentials.get("VOLCENGINE_TOS_SECRET_KEY"),
+            endpoint=credentials.get("VOLCENGINE_TOS_ENDPOINT"),
+            region=credentials.get("VOLCENGINE_TOS_REGION"),
+        )
+
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         credentials = self.runtime.credentials
         openai_api_key = credentials.get("openai_api_key")
@@ -49,6 +60,7 @@ class S3editTool(Tool):
         # Combine all image sources (uploaded files + URLs in instruction)
         uploaded_image_urls = [image.url for image in images] if images else []
         all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
+        # 这里对每个图片url检测 如果 if not self._is_image_url(last_url) 就调用save_tos将图片存在tos中 用新的tos链接替换 AI!
 
         if image_format == "vision":
             # Clean instruction text and build vision format
