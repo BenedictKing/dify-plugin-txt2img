@@ -22,16 +22,36 @@ class S3editTool(Tool):
         pattern = r"\.(png|jpe?g)(?=[^/]*$)"  # 匹配最后一个路径段的图片扩展名
         return bool(re.search(pattern, url, re.IGNORECASE))
 
-    def save_tos(credentials: dict, url: str) -> str:
+    def save_tos(self, credentials: dict, original_url: str, bucket_name: str) -> str:
+        """Upload external resource to TOS and return new URL"""
         import tos
-
-        bucket_name = credentials.get("VOLCENGINE_TOS_BUCKET_NAME", "")
+        
+        # Download original resource
+        response = requests.get(original_url, timeout=30)
+        response.raise_for_status()
+        
+        # Generate unique object key
+        file_ext = original_url.split('.')[-1].split('?')[0][:4]
+        object_key = f"{int(time.time())}_{random.randint(1000,9999)}.{file_ext}"
+        
+        # Initialize TOS client
         client = tos.TosClientV2(
-            ak=credentials.get("VOLCENGINE_TOS_ACCESS_KEY"),
-            sk=credentials.get("VOLCENGINE_TOS_SECRET_KEY"),
-            endpoint=credentials.get("VOLCENGINE_TOS_ENDPOINT"),
-            region=credentials.get("VOLCENGINE_TOS_REGION"),
+            ak=credentials["VOLCENGINE_TOS_ACCESS_KEY"],
+            sk=credentials["VOLCENGINE_TOS_SECRET_KEY"],
+            endpoint=credentials["VOLCENGINE_TOS_ENDPOINT"],
+            region=credentials["VOLCENGINE_TOS_REGION"],
         )
+        
+        # Upload to TOS
+        client.put_object(
+            bucket=bucket_name,
+            key=object_key,
+            content=response.content,
+            headers={'Content-Type': response.headers.get('Content-Type', 'application/octet-stream')}
+        )
+        
+        # Return new TOS URL
+        return f"https://{bucket_name}.{credentials['VOLCENGINE_TOS_ENDPOINT']}/{object_key}"
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         credentials = self.runtime.credentials
@@ -60,18 +80,34 @@ class S3editTool(Tool):
         # Combine all image sources (uploaded files + URLs in instruction)
         uploaded_image_urls = [image.url for image in images] if images else []
         all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
-        # 这里对每个图片url检测 如果 if not self._is_image_url(last_url) 就调用save_tos将图片存在tos中 用新的tos链接替换 AI!
 
+        # Process all URLs - convert non-image URLs to TOS
+        processed_urls = []
+        for url in all_image_urls:
+            if self._is_image_url(url):
+                processed_urls.append(url)
+            else:
+                try:
+                    # Save to TOS and get new URL
+                    new_url = self.save_tos(
+                        credentials=credentials,
+                        original_url=url,
+                        bucket_name=credentials["VOLCENGINE_TOS_BUCKET_NAME"]
+                    )
+                    processed_urls.append(new_url)
+                except Exception as e:
+                    logger.error(f"Failed to process URL {url}: {e}")
+                    continue
+
+        # Update messages based on processed URLs
+        cleaned_instruction = re.sub(r"https?://\S+", "", instruction_text).strip()
         if image_format == "vision":
-            # Clean instruction text and build vision format
-            cleaned_instruction = re.sub(r"https?://\S+", "", instruction_text).strip()
             content = [{"type": "text", "text": cleaned_instruction}]
-            for url in all_image_urls:
+            for url in processed_urls:
                 content.append({"type": "image_url", "image_url": {"url": url}})
             messages[0]["content"] = content
         else:
-            # Text format - preserve original structure with URLs
-            url_prefix = " ".join(all_image_urls)
+            url_prefix = " ".join(processed_urls)
             messages[0]["content"] = f"{url_prefix} {instruction_text}".strip()
         try:
             # 发送API请求
