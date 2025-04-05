@@ -108,9 +108,12 @@ class S3editTool(Tool):
         openai_api_key = credentials.get("openai_api_key")
         openai_base_url = credentials.get("openai_base_url")
         openai_url = str(URL(openai_base_url) / "v1/chat/completions")
-
+        conversation_id = tool_parameters.get("conversation_id")
+        dialogue_count = tool_parameters.get("dialogue_count", 0)
         image_files = tool_parameters.get("image_files")
         images = [i for i in image_files if i.type == "image"]
+
+        # 利用这些参数维护一个本地对话历史， 主要内容是通过 dialogue_count计数的对话历史 数据结构类似 [{dialogue_count:0,instruction:"text",image_urls:["https"]}] 持久化方法看文档 https://docs.dify.ai/zh-hans/plugins/schema-definition/persistent-storage AI!
 
         model = tool_parameters.get("model", "gpt-4o-all")
         stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
@@ -159,7 +162,7 @@ class S3editTool(Tool):
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
             headers = {"Authorization": f"Bearer {openai_api_key}", "Content-Type": "application/json"}
-            logger.info({"url": openai_url, "headers": headers, "payload": openai_payload})
+            logger.info({"url": openai_url, "headers": headers, "payload": openai_payload, "processed_urls": processed_urls})
             response = requests.post(openai_url, headers=headers, json=openai_payload, timeout=60, stream=stream)
             response.raise_for_status()
 
@@ -193,7 +196,6 @@ class S3editTool(Tool):
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
                 last_url = image_urls[-1]
-
                 if not self._is_image_url(last_url):
                     logger.info(f"unknown image url: {last_url}")
                     try:
@@ -206,12 +208,12 @@ class S3editTool(Tool):
                         yield self.create_blob_message(blob=response.content, meta={"mime_type": content_type})
                     except Exception as e:
                         logger.error(f"Failed to process image URL: {e}")
-                        yield self.create_text_message("图片处理失败，请尝试重新生成")
+                        yield self.create_text_message("\n\n图片处理失败，请尝试重新生成")
                 else:
                     yield self.create_image_message(last_url)
-
                 return
-            yield self.create_text_message("当前流量限制，请稍后再试")
+
+            yield self.create_text_message("\n\n当前流量限制，请稍后再试")
 
         except Exception as e:
             raise BaseException(f"API Error: {str(e)}")
