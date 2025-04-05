@@ -208,13 +208,15 @@ class S3editTool(Tool):
                             f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
                             for entry in history
                         )
-                        analysis_prompt = f"""Analyze conversation history to identify which images the user wants to modify:
-                        
-                        {history_context}
-                        
-                        Current request: {instruction_to_use}
-                        
-                        Respond ONLY with JSON format: {{"reference_round": X, "modification_focus": "text_here"}}"""  # 这个提示词应该要求返回用户要改的图片urls和修改后的绘画改图提示词 AI!
+                        analysis_prompt = f"""Analyze conversation history to identify EXACTLY which images the user wants to modify:
+{history_context}
+
+Current request: {instruction_to_use}
+
+Respond in JSON format with:
+1. reference_round: The dialogue_count containing target images
+2. target_image_urls: Array of image URLs to modify (MUST exist in history)
+3. revised_instruction: Revised prompt combining history and current request"""
 
                         # 3. Call LLM for analysis
                         analysis_response = requests.post(
@@ -227,8 +229,12 @@ class S3editTool(Tool):
                         analysis = json.loads(analysis_response["choices"][0]["message"]["content"])
                         for entry in history:
                             if entry["dialogue_count"] == analysis["reference_round"]:
-                                processed_urls = entry.get("image_urls", [])
-                                instruction_to_use = f"{analysis['modification_focus']} - {instruction_to_use}"
+                                # Verify URLs exist in history and match user request
+                                valid_urls = [url for url in analysis.get("target_image_urls", []) if url in entry.get("image_urls", [])]
+                                processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
+                                
+                                # Combine instructions with clear separation
+                                instruction_to_use = f"{analysis['revised_instruction']}\n\n(修改要求: {instruction_to_use})"
                                 break
 
                 except Exception as e:
