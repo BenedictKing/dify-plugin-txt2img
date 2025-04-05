@@ -41,7 +41,20 @@ parameters:
       zh_Hans: "上传需要编辑的图片文件（支持格式：PNG、JPEG）"
       pt_BR: "Faça upload de arquivos de imagem para edição (formatos suportados: PNG, JPEG)"
     llm_description: "The image files to be edited"
-  - name: #加上一项 sys.dialogue_count Number AI!
+  - name: sys.dialogue_count
+    type: number
+    form: llm
+    required: true
+    default: 0
+    label:
+      en_US: "Dialogue Count"
+      zh_Hans: "对话计数" 
+      pt_BR: "Contagem de Diálogo"
+    human_description:
+      en_US: "System parameter tracking number of dialogues"
+      zh_Hans: "系统用于跟踪对话次数的参数"
+      pt_BR: "Parâmetro do sistema para acompanhar o número de diálogos"
+    llm_description: "System parameter tracking number of dialogues (auto-incremented)"
   - name: stream
     type: select
     form: form
