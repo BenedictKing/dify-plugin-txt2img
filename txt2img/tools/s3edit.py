@@ -202,12 +202,12 @@ class S3editTool(Tool):
                     existing_data = self.session.storage.get(storage_key)
                     if existing_data:
                         history = json.loads(existing_data.decode())
-                        
+
                         # 2. Prepare LLM analysis prompt
                         history_context = "\n".join(
-                            f"Round {entry['dialogue_count']}: {entry.get('instruction', '')} "
-                            f"[Images: {len(entry.get('image_urls', []))}]"
+                            f"Round {entry['dialogue_count']}: {entry.get('instruction', '')} [Images: {len(entry.get('image_urls', []))}]"
                             for entry in history
+                            # response_content如果有也应该加上 AI!
                         )
                         analysis_prompt = f"""Analyze conversation history to identify which images the user wants to modify:
                         
@@ -216,26 +216,22 @@ class S3editTool(Tool):
                         Current request: {instruction_to_use}
                         
                         Respond ONLY with JSON format: {{"reference_round": X, "modification_focus": "text_here"}}"""
-                        
+
                         # 3. Call LLM for analysis
                         analysis_response = requests.post(
                             openai_url,
                             headers={"Authorization": f"Bearer {openai_api_key}"},
-                            json={
-                                "model": "gpt-4-turbo",
-                                "messages": [{"role": "user", "content": analysis_prompt}],
-                                "temperature": 0.2
-                            }
+                            json={"model": "deepseek-v3", "messages": [{"role": "user", "content": analysis_prompt}], "temperature": 0.2},
                         ).json()
-                        
+
                         # 4. Parse and apply results
-                        analysis = json.loads(analysis_response['choices'][0]['message']['content'])
+                        analysis = json.loads(analysis_response["choices"][0]["message"]["content"])
                         for entry in history:
-                            if entry['dialogue_count'] == analysis['reference_round']:
-                                processed_urls = entry.get('image_urls', [])
+                            if entry["dialogue_count"] == analysis["reference_round"]:
+                                processed_urls = entry.get("image_urls", [])
                                 instruction_to_use = f"{analysis['modification_focus']} - {instruction_to_use}"
                                 break
-                                
+
                 except Exception as e:
                     logger.error(f"History analysis failed: {e}")
                     yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
