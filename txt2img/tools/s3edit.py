@@ -163,7 +163,6 @@ class S3editTool(Tool):
                         processed_urls = entry.get("image_urls", [])
                         # Use original instruction from history
                         cleaned_instruction = re.sub(r"https?://\S+", "", entry.get("instruction", "")).strip()
-                        # 这里有内容就可以直接跳到组成payload发起请求的地方 只有没有的才需要处理数据并保存 AI!
                         break
         except Exception as e:
             logger.error(f"History lookup failed: {e}")
