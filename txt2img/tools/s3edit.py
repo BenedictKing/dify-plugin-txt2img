@@ -152,25 +152,24 @@ class S3editTool(Tool):
         processed_urls = []
         instruction_to_use = tool_parameters["instruction"]  # Default to new instruction
         is_retry = False
-        storage_key = f"s3edit_history_{conversation_id}" if conversation_id else None
-
+        storage_key = f"s3edit_history_{conversation_id}"
         # Check for existing history entry for this specific dialogue_count at the beginning
-        if storage_key and dialogue_count > 0:
-            try:
-                existing_data = self.session.storage.get(storage_key)
-                if existing_data:
-                    history = json.loads(existing_data.decode())
-                    # Find matching historical entry
-                    for entry in history:
-                        if entry.get("dialogue_count") == dialogue_count:
-                            logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
-                            is_retry = True
-                            processed_urls = entry.get("image_urls", [])
-                            instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
-                            # If response content exists, we still re-request as per retry logic
-                            break  # Found the entry, no need to check further
-            except Exception as e:
-                logger.error(f"History lookup failed during retry check: {e}")
+
+        try:
+            existing_data = self.session.storage.get(storage_key)
+            if existing_data:
+                history = json.loads(existing_data.decode())
+                # Find matching historical entry
+                for entry in history:
+                    if entry.get("dialogue_count") == dialogue_count:
+                        logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
+                        is_retry = True
+                        processed_urls = entry.get("image_urls", [])
+                        instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
+                        # If response content exists, we still re-request as per retry logic
+                        break  # Found the entry, no need to check further
+        except Exception as e:
+            logger.error(f"History lookup failed during retry check: {e}")
 
         # Only process URLs and save initial history if it's NOT a retry
         if not is_retry:
@@ -195,30 +194,30 @@ class S3editTool(Tool):
                         continue
             processed_urls = current_processed_urls  # Assign to the main variable
             instruction_to_use = instruction_text  # Ensure instruction_to_use reflects the current input
-
+            # 如果当前 processed_urls 为空，说明用户要对之前的某次请求做修改，需要调用LLM模型根据之前的历史记录，明确找到用户要修改的图片urls和适当的提示词 AI!
             # 2. Store initial conversation history (only if not a retry)
-            if storage_key:  # Ensure we have a key before trying to save
-                history_entry = {
-                    "dialogue_count": dialogue_count,
-                    "instruction": instruction_to_use,  # Store the instruction used
-                    "image_urls": processed_urls,  # Store the processed URLs
-                }
-                try:
-                    existing_data = self.session.storage.get(storage_key)
-                    history = json.loads(existing_data.decode()) if existing_data else []
 
-                    updated = False
-                    for i, entry in enumerate(history):
-                        if entry.get("dialogue_count") == dialogue_count:
-                            history[i] = history_entry  # Update existing entry
-                            updated = True
-                            break
-                    if not updated:
-                        history.append(history_entry)  # Append new entry
+            history_entry = {
+                "dialogue_count": dialogue_count,
+                "instruction": instruction_to_use,  # Store the instruction used
+                "image_urls": processed_urls,  # Store the processed URLs
+            }
+            try:
+                existing_data = self.session.storage.get(storage_key)
+                history = json.loads(existing_data.decode()) if existing_data else []
 
-                    self.session.storage.set(storage_key, json.dumps(history).encode())
-                except Exception as e:
-                    logger.error(f"Failed to save initial conversation history: {e}")
+                updated = False
+                for i, entry in enumerate(history):
+                    if entry.get("dialogue_count") == dialogue_count:
+                        history[i] = history_entry  # Update existing entry
+                        updated = True
+                        break
+                if not updated:
+                    history.append(history_entry)  # Append new entry
+
+                self.session.storage.set(storage_key, json.dumps(history).encode())
+            except Exception as e:
+                logger.error(f"Failed to save initial conversation history: {e}")
 
         # Prepare messages for API call using instruction_to_use and processed_urls
         # This part runs for both new requests and retries
@@ -276,32 +275,32 @@ class S3editTool(Tool):
             logger.info(content)
 
             # Update conversation history AFTER receiving content (runs for both new and retry)
-            if storage_key:  # Ensure we have a key
-                # Reconstruct the entry to include the response
-                history_entry_with_response = {
-                    "dialogue_count": dialogue_count,
-                    "instruction": instruction_to_use,  # Use the instruction that was actually sent
-                    "image_urls": processed_urls,
-                    "response_content": content,  # Add response content
-                }
-                try:
-                    existing_data = self.session.storage.get(storage_key)
-                    history = json.loads(existing_data.decode()) if existing_data else []
 
-                    updated = False
-                    for i, entry in enumerate(history):
-                        if entry.get("dialogue_count") == dialogue_count:
-                            history[i] = history_entry_with_response  # Update with response
-                            updated = True
-                            break
-                    if not updated:
-                        # Should not happen if initial save worked or if it was a retry, but as fallback:
-                        logger.warning(f"History entry for dialogue_count {dialogue_count} not found for final update, appending.")
-                        history.append(history_entry_with_response)
+            # Reconstruct the entry to include the response
+            history_entry_with_response = {
+                "dialogue_count": dialogue_count,
+                "instruction": instruction_to_use,  # Use the instruction that was actually sent
+                "image_urls": processed_urls,
+                "response_content": content,  # Add response content
+            }
+            try:
+                existing_data = self.session.storage.get(storage_key)
+                history = json.loads(existing_data.decode()) if existing_data else []
 
-                    self.session.storage.set(storage_key, json.dumps(history).encode())
-                except Exception as e:
-                    logger.error(f"Failed to update conversation history with response: {e}")
+                updated = False
+                for i, entry in enumerate(history):
+                    if entry.get("dialogue_count") == dialogue_count:
+                        history[i] = history_entry_with_response  # Update with response
+                        updated = True
+                        break
+                if not updated:
+                    # Should not happen if initial save worked or if it was a retry, but as fallback:
+                    logger.warning(f"History entry for dialogue_count {dialogue_count} not found for final update, appending.")
+                    history.append(history_entry_with_response)
+
+                self.session.storage.set(storage_key, json.dumps(history).encode())
+            except Exception as e:
+                logger.error(f"Failed to update conversation history with response: {e}")
 
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
