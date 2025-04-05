@@ -31,7 +31,7 @@ parameters:
   - name: image_files
     type: files
     form: llm
-    required: false
+    required: true
     label:
       en_US: Image files
       zh_Hans: 图片文件
@@ -41,11 +41,10 @@ parameters:
       zh_Hans: "上传需要编辑的图片文件（支持格式：PNG、JPEG）"
       pt_BR: "Faça upload de arquivos de imagem para edição (formatos suportados: PNG, JPEG)"
     llm_description: "The image files to be edited"
-  - name: sys.dialogue_count
+  - name: dialogue_count
     type: number
     form: llm
     required: true
-    default: 0
     label:
       en_US: "Dialogue Count"
       zh_Hans: "对话计数" 
@@ -55,6 +54,7 @@ parameters:
       zh_Hans: "系统用于跟踪对话次数的参数"
       pt_BR: "Parâmetro do sistema para acompanhar o número de diálogos"
     llm_description: "System parameter tracking number of dialogues (auto-incremented)"
+  - name #再加一项  conversation_id String  AI!
   - name: stream
     type: select
     form: form
