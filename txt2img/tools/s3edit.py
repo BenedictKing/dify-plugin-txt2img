@@ -151,22 +151,21 @@ class S3editTool(Tool):
 
         # Check for existing processed URLs in history for retries
         processed_urls = []
-        if conversation_id and dialogue_count > 0:  # 这里不用二次判断，条件肯定是满足的 AI!
-            storage_key = f"s3edit_history_{conversation_id}"
-            try:
-                existing_data = self.session.storage.get(storage_key)
-                if existing_data:
-                    history = json.loads(existing_data.decode())
-                    # Find matching historical entry
-                    for entry in history:
-                        if entry.get("dialogue_count") == dialogue_count:
-                            logger.info(f"Reusing historical data for dialogue_count {dialogue_count}")
-                            processed_urls = entry.get("image_urls", [])
-                            # Use original instruction from history
-                            cleaned_instruction = re.sub(r"https?://\S+", "", entry.get("instruction", "")).strip()
-                            break
-            except Exception as e:
-                logger.error(f"History lookup failed: {e}")
+        storage_key = f"s3edit_history_{conversation_id}"
+        try:
+            existing_data = self.session.storage.get(storage_key)
+            if existing_data:
+                history = json.loads(existing_data.decode())
+                # Find matching historical entry
+                for entry in history:
+                    if entry.get("dialogue_count") == dialogue_count:
+                        logger.info(f"Reusing historical data for dialogue_count {dialogue_count}")
+                        processed_urls = entry.get("image_urls", [])
+                        # Use original instruction from history
+                        cleaned_instruction = re.sub(r"https?://\S+", "", entry.get("instruction", "")).strip()
+                        break
+        except Exception as e:
+            logger.error(f"History lookup failed: {e}")
 
         model = tool_parameters.get("model", "gpt-4o-all")
         stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
