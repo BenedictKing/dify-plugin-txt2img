@@ -205,9 +205,8 @@ class S3editTool(Tool):
 
                         # 2. Prepare LLM analysis prompt
                         history_context = "\n".join(
-                            f"Round {entry['dialogue_count']}: {entry.get('instruction', '')} [Images: {len(entry.get('image_urls', []))}]"
+                            f"Round {entry['dialogue_count']}: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
                             for entry in history
-                            # response_content如果有也应该加上 AI!
                         )
                         analysis_prompt = f"""Analyze conversation history to identify which images the user wants to modify:
                         
