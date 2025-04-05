@@ -214,7 +214,7 @@ class S3editTool(Tool):
             messages[0]["content"] = f"{url_prefix} {instruction_text}".strip()
 
         # Store conversation history if conversation_id exists
-        if conversation_id:
+        if conversation_id:  # conversation_id是必填项，不考虑没有的情况  AI!
             storage_key = f"s3edit_history_{conversation_id}"
             history_entry = {"dialogue_count": dialogue_count, "instruction": tool_parameters["instruction"], "image_urls": processed_urls}
 
