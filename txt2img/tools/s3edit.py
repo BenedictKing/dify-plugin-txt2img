@@ -66,7 +66,7 @@ class S3editTool(Tool):
         try:
             response = requests.get(original_url, headers=headers, cookies=cookies, timeout=60)
             response.raise_for_status()
-            
+
             # Add image validation check
             if not response.content:
                 logger.error(f"Empty content from {original_url}")
@@ -76,24 +76,24 @@ class S3editTool(Tool):
                 """Validate image content using magic numbers"""
                 if not content_type.startswith("image/"):
                     return False
-                
+
                 try:
                     # Check first few bytes for image signatures
                     if len(content) < 12:
                         return False
-                        
-                    if content.startswith(b"\xFF\xD8\xFF"):
+
+                    if content.startswith(b"\xff\xd8\xff"):
                         return True  # JPEG
-                    if content.startswith(b"\x89PNG\r\n\x1A\n"):
+                    if content.startswith(b"\x89PNG\r\n\x1a\n"):
                         return True  # PNG
                     if content[0:4] == b"RIFF" and content[8:12] == b"WEBP":
                         return True  # WEBP
                     if content[0:3] == b"GIF":
                         return True  # GIF
-                        
+
                 except Exception as e:
                     logger.error(f"Image validation error: {e}")
-                    
+
                 return False
 
             # Perform validation
@@ -148,6 +148,7 @@ class S3editTool(Tool):
         dialogue_count = tool_parameters.get("dialogue_count", 0)
         image_files = tool_parameters.get("image_files")
         images = [i for i in image_files if i.type == "image"]
+        # 在处理新内容前应该读取保存的历史记录，如果conversation_id 和dialogue_count都已经有了，说明是重试，那么不需要二次处理，直接用处理过的数据去请求后台API AI!
 
         model = tool_parameters.get("model", "gpt-4o-all")
         stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
