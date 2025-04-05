@@ -41,6 +41,7 @@ parameters:
       zh_Hans: "上传需要编辑的图片文件（支持格式：PNG、JPEG）"
       pt_BR: "Faça upload de arquivos de imagem para edição (formatos suportados: PNG, JPEG)"
     llm_description: "The image files to be edited"
+  - name: #加上一项 sys.dialogue_count Number AI!
   - name: stream
     type: select
     form: form
