@@ -54,7 +54,19 @@ parameters:
       zh_Hans: "系统用于跟踪对话次数的参数"
       pt_BR: "Parâmetro do sistema para acompanhar o número de diálogos"
     llm_description: "System parameter tracking number of dialogues (auto-incremented)"
-  - name #再加一项  conversation_id String  AI!
+  - name: conversation_id
+    type: string
+    form: llm
+    required: true
+    label:
+      en_US: "Conversation ID"
+      zh_Hans: "会话ID"
+      pt_BR: "ID da Conversa"
+    human_description:
+      en_US: "Unique identifier for the conversation session"
+      zh_Hans: "会话会话的唯一标识符"
+      pt_BR: "Identificador único para a sessão de conversa"
+    llm_description: "Unique identifier tracking the conversation context"
   - name: stream
     type: select
     form: form
