@@ -113,7 +113,29 @@ class S3editTool(Tool):
         image_files = tool_parameters.get("image_files")
         images = [i for i in image_files if i.type == "image"]
 
-        # 利用这些参数维护一个本地对话历史， 主要内容是通过 dialogue_count计数的对话历史 数据结构类似 [{dialogue_count:0,instruction:"text",image_urls:["https"]}] 持久化方法看文档 https://docs.dify.ai/zh-hans/plugins/schema-definition/persistent-storage AI!
+        # Store conversation history if conversation_id exists
+        if conversation_id:
+            storage_key = f"s3edit_history_{conversation_id}"
+            history_entry = {
+                "dialogue_count": dialogue_count,
+                "instruction": tool_parameters["instruction"],
+                "image_urls": processed_urls
+            }
+            
+            try:
+                # Get existing history
+                existing_data = self.session.storage.get(storage_key)
+                history = json.loads(existing_data.decode()) if existing_data else []
+                
+                # Append new entry
+                history.append(history_entry)
+                
+                # Save back to storage
+                self.session.storage.set(storage_key, json.dumps(history).encode())
+            except Exception as e:
+                logger.error(f"Failed to update conversation history: {e}")
+        else:
+            logger.warning("Conversation history tracking disabled - no conversation_id provided")
 
         model = tool_parameters.get("model", "gpt-4o-all")
         stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
