@@ -10,6 +10,7 @@ from typing import Any
 import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tos.exceptions import TosServerError
 from yarl import URL
 
 logging.basicConfig(level=logging.INFO)
@@ -90,7 +91,7 @@ class S3editTool(Tool):
         try:
             client.head_object(bucket=bucket_name, key=object_key)
             logger.info(f"File {content_hash} already exists in TOS bucket")
-        except tos.TosServerError as e:
+        except TosServerError as e:
             if e.status_code != 404:
                 logger.error(f"TOS check error: {e}")
             # Upload if not exists
