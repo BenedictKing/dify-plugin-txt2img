@@ -1,9 +1,9 @@
+import hashlib
 import json
 import logging
 import random
 import re
 import time
-import uuid
 from collections.abc import Generator
 from typing import Any
 
@@ -69,11 +69,12 @@ class S3editTool(Tool):
             logger.error(f"Failed to download resource from {original_url}: {e}")
             return original_url  # Return original URL on failure
 
-        # Generate unique object key
+        # Generate content-hashed object key
         content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
         extension_map = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
         file_ext = extension_map.get(content_type.split(";")[0].lower(), "png")  # Handle charset params
-        object_key = f"s3edit/{uuid.uuid4()}.{file_ext}"  # 文件名我想根据文件内容的hash或者sum256之类的来定 如果有重复内容直接从bucket读取已有文件 AI!
+        content_hash = hashlib.sha256(response.content).hexdigest()
+        object_key = f"s3edit/{content_hash}.{file_ext}"
 
         bucket_name = credentials["VOLCENGINE_TOS_BUCKET_NAME"]
 
@@ -85,8 +86,14 @@ class S3editTool(Tool):
             region=credentials["VOLCENGINE_TOS_REGION"],
         )
 
-        # Upload to TOS
+        # Check if object exists before uploading
         try:
+            client.head_object(bucket=bucket_name, key=object_key)
+            logger.info(f"File {content_hash} already exists in TOS bucket")
+        except tos.TosServerError as e:
+            if e.status_code != 404:
+                logger.error(f"TOS check error: {e}")
+            # Upload if not exists
             client.put_object(bucket=bucket_name, key=object_key, content=response.content)
         except Exception as e:
             logger.error(f"Failed to save tos: {e}")
