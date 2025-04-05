@@ -205,7 +205,7 @@ class S3editTool(Tool):
 
                         # 2. Prepare LLM analysis prompt
                         history_context = "\n".join(
-                            f"Round {entry['dialogue_count']}: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
+                            f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
                             for entry in history
                         )
                         analysis_prompt = f"""Analyze conversation history to identify which images the user wants to modify:
@@ -214,7 +214,7 @@ class S3editTool(Tool):
                         
                         Current request: {instruction_to_use}
                         
-                        Respond ONLY with JSON format: {{"reference_round": X, "modification_focus": "text_here"}}"""
+                        Respond ONLY with JSON format: {{"reference_round": X, "modification_focus": "text_here"}}"""  # 这个提示词应该要求返回用户要改的图片urls和修改后的绘画改图提示词 AI!
 
                         # 3. Call LLM for analysis
                         analysis_response = requests.post(
