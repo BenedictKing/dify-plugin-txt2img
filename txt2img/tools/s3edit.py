@@ -213,25 +213,22 @@ class S3editTool(Tool):
             url_prefix = " ".join(processed_urls)
             messages[0]["content"] = f"{url_prefix} {instruction_text}".strip()
 
-        # Store conversation history if conversation_id exists
-        if conversation_id:  # conversation_id是必填项，不考虑没有的情况  AI!
-            storage_key = f"s3edit_history_{conversation_id}"
-            history_entry = {"dialogue_count": dialogue_count, "instruction": tool_parameters["instruction"], "image_urls": processed_urls}
+        # Store conversation history
+        storage_key = f"s3edit_history_{conversation_id}"
+        history_entry = {"dialogue_count": dialogue_count, "instruction": tool_parameters["instruction"], "image_urls": processed_urls}
 
-            try:
-                # Get existing history
-                existing_data = self.session.storage.get(storage_key)
-                history = json.loads(existing_data.decode()) if existing_data else []
+        try:
+            # Get existing history
+            existing_data = self.session.storage.get(storage_key)
+            history = json.loads(existing_data.decode()) if existing_data else []
 
-                # Append new entry
-                history.append(history_entry)
+            # Append new entry
+            history.append(history_entry)
 
-                # Save back to storage
-                self.session.storage.set(storage_key, json.dumps(history).encode())
-            except Exception as e:
-                logger.error(f"Failed to update conversation history: {e}")
-        else:
-            logger.warning("Conversation history tracking disabled - no conversation_id provided")
+            # Save back to storage
+            self.session.storage.set(storage_key, json.dumps(history).encode())
+        except Exception as e:
+            logger.error(f"Failed to update conversation history: {e}")
         try:
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
