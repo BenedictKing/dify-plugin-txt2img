@@ -195,12 +195,12 @@ class S3editTool(Tool):
                     processed_urls.append(url)
                 else:
                     try:
-                    # Save to TOS and get new URL
-                    new_url = self.save_tos(credentials=credentials, original_url=url)
-                    processed_urls.append(new_url)
-                except Exception as e:
-                    logger.error(f"Failed to process URL {url}: {e}")
-                    continue
+                        # Save to TOS and get new URL
+                        new_url = self.save_tos(credentials=credentials, original_url=url)
+                        processed_urls.append(new_url)
+                    except Exception as e:
+                        logger.error(f"Failed to process URL {url}: {e}")
+                        continue
 
         # Update messages based on processed URLs
         cleaned_instruction = re.sub(r"https?://\S+", "", instruction_text).strip()
