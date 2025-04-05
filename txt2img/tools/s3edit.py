@@ -149,93 +149,96 @@ class S3editTool(Tool):
         image_files = tool_parameters.get("image_files")
         images = [i for i in image_files if i.type == "image"]
 
-        # Check for existing processed URLs in history for retries
         processed_urls = []
-        storage_key = f"s3edit_history_{conversation_id}"
-        try:
-            existing_data = self.session.storage.get(storage_key)
-            if existing_data:
-                history = json.loads(existing_data.decode())
-                # Find matching historical entry
-                for entry in history:
-                    if entry.get("dialogue_count") == dialogue_count:
-                        logger.info(f"Reusing historical data for dialogue_count {dialogue_count}")
-                        processed_urls = entry.get("image_urls", [])
-                        # Use original instruction from history
-                        cleaned_instruction = re.sub(r"https?://\S+", "", entry.get("instruction", "")).strip()
-                        break
-        except Exception as e:
-            logger.error(f"History lookup failed: {e}")
+        instruction_to_use = tool_parameters["instruction"]  # Default to new instruction
+        is_retry = False
+        storage_key = f"s3edit_history_{conversation_id}" if conversation_id else None
 
-        model = tool_parameters.get("model", "gpt-4o-all")
-        stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
-        messages = [
-            {
-                "role": "user",
-                "content": tool_parameters["instruction"],
-            },
-        ]
-        image_format = tool_parameters.get("image_format", "text")  # Default to text format
+        # Check for existing history entry for this specific dialogue_count at the beginning
+        if storage_key and dialogue_count > 0:
+            try:
+                existing_data = self.session.storage.get(storage_key)
+                if existing_data:
+                    history = json.loads(existing_data.decode())
+                    # Find matching historical entry
+                    for entry in history:
+                        if entry.get("dialogue_count") == dialogue_count:
+                            logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
+                            is_retry = True
+                            processed_urls = entry.get("image_urls", [])
+                            instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
+                            # If response content exists, we still re-request as per retry logic
+                            break  # Found the entry, no need to check further
+            except Exception as e:
+                logger.error(f"History lookup failed during retry check: {e}")
 
-        # Extract URLs from instruction text
-        instruction_text = tool_parameters["instruction"]
-        instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
-        # image_urls_from_instruction = [url for url in instruction_urls if self._is_image_url(url)]
+        # Only process URLs and save initial history if it's NOT a retry
+        if not is_retry:
+            logger.info(f"Processing new request or request without history for dialogue_count {dialogue_count}.")
+            # 1. Process URLs
+            instruction_text = tool_parameters["instruction"]  # Use the current instruction
+            instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
 
-        # Only process URLs if not found in history
-        if not processed_urls:
-            # Combine all image sources (uploaded files + URLs in instruction)
             uploaded_image_urls = [image.url for image in images] if images else []
             all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
 
-            # Process all URLs - convert non-image URLs to TOS
+            current_processed_urls = []  # Use a temporary list for new processing
             for url in all_image_urls:
                 if self._is_image_url(url):
-                    processed_urls.append(url)
+                    current_processed_urls.append(url)
                 else:
                     try:
-                        # Save to TOS and get new URL
                         new_url = self.save_tos(credentials=credentials, original_url=url)
-                        processed_urls.append(new_url)
+                        current_processed_urls.append(new_url)
                     except Exception as e:
                         logger.error(f"Failed to process URL {url}: {e}")
                         continue
+            processed_urls = current_processed_urls  # Assign to the main variable
+            instruction_to_use = instruction_text  # Ensure instruction_to_use reflects the current input
 
-        # Update messages based on processed URLs
-        cleaned_instruction = re.sub(r"https?://\S+", "", instruction_text).strip()
+            # 2. Store initial conversation history (only if not a retry)
+            if storage_key:  # Ensure we have a key before trying to save
+                history_entry = {
+                    "dialogue_count": dialogue_count,
+                    "instruction": instruction_to_use,  # Store the instruction used
+                    "image_urls": processed_urls,  # Store the processed URLs
+                }
+                try:
+                    existing_data = self.session.storage.get(storage_key)
+                    history = json.loads(existing_data.decode()) if existing_data else []
+
+                    updated = False
+                    for i, entry in enumerate(history):
+                        if entry.get("dialogue_count") == dialogue_count:
+                            history[i] = history_entry  # Update existing entry
+                            updated = True
+                            break
+                    if not updated:
+                        history.append(history_entry)  # Append new entry
+
+                    self.session.storage.set(storage_key, json.dumps(history).encode())
+                except Exception as e:
+                    logger.error(f"Failed to save initial conversation history: {e}")
+
+        # Prepare messages for API call using instruction_to_use and processed_urls
+        # This part runs for both new requests and retries
+        model = tool_parameters.get("model", "gpt-4o-all")
+        stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
+        image_format = tool_parameters.get("image_format", "text")
+        messages = [{"role": "user", "content": ""}]  # Placeholder
+
+        cleaned_instruction = re.sub(r"https?://\S+", "", instruction_to_use).strip()
+
         if image_format == "vision":
-            content = [{"type": "text", "text": cleaned_instruction}]
+            content_list = [{"type": "text", "text": cleaned_instruction}]
             for url in processed_urls:
-                content.append({"type": "image_url", "image_url": {"url": url}})
-            messages[0]["content"] = content
-        else:
+                content_list.append({"type": "image_url", "image_url": {"url": url}})
+            messages[0]["content"] = content_list
+        else:  # text format
             url_prefix = " ".join(processed_urls)
-            messages[0]["content"] = f"{url_prefix} {instruction_text}".strip()
+            messages[0]["content"] = f"{url_prefix} {cleaned_instruction}".strip() if url_prefix else cleaned_instruction
 
-        # Store conversation history initially (before API call)
-        storage_key = f"s3edit_history_{conversation_id}"
-        history_entry = {"dialogue_count": dialogue_count, "instruction": tool_parameters["instruction"], "image_urls": processed_urls}
-
-        try:
-            # Get existing history
-            existing_data = self.session.storage.get(storage_key)
-            history = json.loads(existing_data.decode()) if existing_data else []
-
-            # Check if an entry for this dialogue_count already exists and update it, otherwise append
-            updated = False
-            for i, entry in enumerate(history):
-                if entry.get("dialogue_count") == dialogue_count:
-                    history[i] = history_entry
-                    updated = True
-                    break
-            if not updated:
-                history.append(history_entry)
-
-            # Save back to storage
-            self.session.storage.set(storage_key, json.dumps(history).encode())
-        except Exception as e:
-            logger.error(f"Failed to update initial conversation history: {e}")
-
+        # --- API Call Section ---
         try:
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
@@ -272,28 +275,33 @@ class S3editTool(Tool):
 
             logger.info(content)
 
-            # Update conversation history AFTER receiving content
-            history_entry["response_content"] = content  # Add response content to history
-            try:
-                # Get existing history
-                existing_data = self.session.storage.get(storage_key)
-                history = json.loads(existing_data.decode()) if existing_data else []
+            # Update conversation history AFTER receiving content (runs for both new and retry)
+            if storage_key:  # Ensure we have a key
+                # Reconstruct the entry to include the response
+                history_entry_with_response = {
+                    "dialogue_count": dialogue_count,
+                    "instruction": instruction_to_use,  # Use the instruction that was actually sent
+                    "image_urls": processed_urls,
+                    "response_content": content,  # Add response content
+                }
+                try:
+                    existing_data = self.session.storage.get(storage_key)
+                    history = json.loads(existing_data.decode()) if existing_data else []
 
-                # Update existing entry for this dialogue_count
-                updated = False
-                for i, entry in enumerate(history):
-                    if entry.get("dialogue_count") == dialogue_count:
-                        history[i] = history_entry
-                        updated = True
-                        break
-                if not updated:
-                    # Fallback: If somehow the entry doesn't exist, append it
-                    history.append(history_entry)
+                    updated = False
+                    for i, entry in enumerate(history):
+                        if entry.get("dialogue_count") == dialogue_count:
+                            history[i] = history_entry_with_response  # Update with response
+                            updated = True
+                            break
+                    if not updated:
+                        # Should not happen if initial save worked or if it was a retry, but as fallback:
+                        logger.warning(f"History entry for dialogue_count {dialogue_count} not found for final update, appending.")
+                        history.append(history_entry_with_response)
 
-                # Save back to storage
-                self.session.storage.set(storage_key, json.dumps(history).encode())
-            except Exception as e:
-                logger.error(f"Failed to update conversation history with response: {e}")
+                    self.session.storage.set(storage_key, json.dumps(history).encode())
+                except Exception as e:
+                    logger.error(f"Failed to update conversation history with response: {e}")
 
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
