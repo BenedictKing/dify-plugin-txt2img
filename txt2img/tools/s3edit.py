@@ -73,7 +73,7 @@ class S3editTool(Tool):
         content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
         extension_map = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
         file_ext = extension_map.get(content_type.split(";")[0].lower(), "png")  # Handle charset params
-        object_key = f"s3edit/{uuid.uuid4()}.{file_ext}"
+        object_key = f"s3edit/{uuid.uuid4()}.{file_ext}"  # 文件名我想根据文件内容的hash或者sum256之类的来定 如果有重复内容直接从bucket读取已有文件 AI!
 
         bucket_name = credentials["VOLCENGINE_TOS_BUCKET_NAME"]
 
