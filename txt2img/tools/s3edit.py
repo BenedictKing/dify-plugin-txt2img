@@ -69,7 +69,7 @@ class S3editTool(Tool):
         except Exception as e:
             logger.error(f"Failed to download resource from {original_url}: {e}")
             return original_url  # Return original URL on failure
-
+        # 下载的图片内容需要验证是否是真的图片而不是文档，如果是文档返回 original_url AI!
         # Generate content-hashed object key
         content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
         extension_map = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
@@ -160,20 +160,16 @@ class S3editTool(Tool):
         # Store conversation history if conversation_id exists
         if conversation_id:
             storage_key = f"s3edit_history_{conversation_id}"
-            history_entry = {
-                "dialogue_count": dialogue_count,
-                "instruction": tool_parameters["instruction"],
-                "image_urls": processed_urls
-            }
-            
+            history_entry = {"dialogue_count": dialogue_count, "instruction": tool_parameters["instruction"], "image_urls": processed_urls}
+
             try:
                 # Get existing history
                 existing_data = self.session.storage.get(storage_key)
                 history = json.loads(existing_data.decode()) if existing_data else []
-                
+
                 # Append new entry
                 history.append(history_entry)
-                
+
                 # Save back to storage
                 self.session.storage.set(storage_key, json.dumps(history).encode())
             except Exception as e:
