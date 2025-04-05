@@ -151,7 +151,7 @@ class S3editTool(Tool):
 
         # Check for existing processed URLs in history for retries
         processed_urls = []
-        if conversation_id and dialogue_count > 0:
+        if conversation_id and dialogue_count > 0:  # 这里不用二次判断，条件肯定是满足的 AI!
             storage_key = f"s3edit_history_{conversation_id}"
             try:
                 existing_data = self.session.storage.get(storage_key)
@@ -213,7 +213,7 @@ class S3editTool(Tool):
             url_prefix = " ".join(processed_urls)
             messages[0]["content"] = f"{url_prefix} {instruction_text}".strip()
 
-        # Store conversation history
+        # Store conversation history initially (before API call)
         storage_key = f"s3edit_history_{conversation_id}"
         history_entry = {"dialogue_count": dialogue_count, "instruction": tool_parameters["instruction"], "image_urls": processed_urls}
 
@@ -222,13 +222,21 @@ class S3editTool(Tool):
             existing_data = self.session.storage.get(storage_key)
             history = json.loads(existing_data.decode()) if existing_data else []
 
-            # Append new entry
-            history.append(history_entry)
+            # Check if an entry for this dialogue_count already exists and update it, otherwise append
+            updated = False
+            for i, entry in enumerate(history):
+                if entry.get("dialogue_count") == dialogue_count:
+                    history[i] = history_entry
+                    updated = True
+                    break
+            if not updated:
+                history.append(history_entry)
 
             # Save back to storage
             self.session.storage.set(storage_key, json.dumps(history).encode())
         except Exception as e:
-            logger.error(f"Failed to update conversation history: {e}")
+            logger.error(f"Failed to update initial conversation history: {e}")
+
         try:
             # 发送API请求
             openai_payload = {"model": model, "messages": messages, "stream": stream}
@@ -264,6 +272,30 @@ class S3editTool(Tool):
                 yield self.create_text_message(content)
 
             logger.info(content)
+
+            # Update conversation history AFTER receiving content
+            history_entry["response_content"] = content  # Add response content to history
+            try:
+                # Get existing history
+                existing_data = self.session.storage.get(storage_key)
+                history = json.loads(existing_data.decode()) if existing_data else []
+
+                # Update existing entry for this dialogue_count
+                updated = False
+                for i, entry in enumerate(history):
+                    if entry.get("dialogue_count") == dialogue_count:
+                        history[i] = history_entry
+                        updated = True
+                        break
+                if not updated:
+                    # Fallback: If somehow the entry doesn't exist, append it
+                    history.append(history_entry)
+
+                # Save back to storage
+                self.session.storage.set(storage_key, json.dumps(history).encode())
+            except Exception as e:
+                logger.error(f"Failed to update conversation history with response: {e}")
+
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
                 last_url = image_urls[-1]
