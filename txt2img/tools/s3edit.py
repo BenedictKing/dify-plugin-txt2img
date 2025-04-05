@@ -148,7 +148,25 @@ class S3editTool(Tool):
         dialogue_count = tool_parameters.get("dialogue_count", 0)
         image_files = tool_parameters.get("image_files")
         images = [i for i in image_files if i.type == "image"]
-        # 在处理新内容前应该读取保存的历史记录，如果conversation_id 和dialogue_count都已经有了，说明是重试，那么不需要二次处理，直接用处理过的数据去请求后台API AI!
+
+        # Check for existing processed URLs in history for retries
+        processed_urls = []
+        if conversation_id and dialogue_count > 0:
+            storage_key = f"s3edit_history_{conversation_id}"
+            try:
+                existing_data = self.session.storage.get(storage_key)
+                if existing_data:
+                    history = json.loads(existing_data.decode())
+                    # Find matching historical entry
+                    for entry in history:
+                        if entry.get("dialogue_count") == dialogue_count:
+                            logger.info(f"Reusing historical data for dialogue_count {dialogue_count}")
+                            processed_urls = entry.get("image_urls", [])
+                            # Use original instruction from history
+                            cleaned_instruction = re.sub(r"https?://\S+", "", entry.get("instruction", "")).strip()
+                            break
+            except Exception as e:
+                logger.error(f"History lookup failed: {e}")
 
         model = tool_parameters.get("model", "gpt-4o-all")
         stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
@@ -165,13 +183,14 @@ class S3editTool(Tool):
         instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
         # image_urls_from_instruction = [url for url in instruction_urls if self._is_image_url(url)]
 
-        # Combine all image sources (uploaded files + URLs in instruction)
-        uploaded_image_urls = [image.url for image in images] if images else []
-        all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
+        # Only process URLs if not found in history
+        if not processed_urls:
+            # Combine all image sources (uploaded files + URLs in instruction)
+            uploaded_image_urls = [image.url for image in images] if images else []
+            all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
 
-        # Process all URLs - convert non-image URLs to TOS
-        processed_urls = []
-        for url in all_image_urls:
+            # Process all URLs - convert non-image URLs to TOS
+            for url in all_image_urls:
             if self._is_image_url(url):
                 processed_urls.append(url)
             else:
