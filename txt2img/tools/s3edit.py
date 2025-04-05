@@ -66,10 +66,46 @@ class S3editTool(Tool):
         try:
             response = requests.get(original_url, headers=headers, cookies=cookies, timeout=60)
             response.raise_for_status()
+            
+            # Add image validation check
+            if not response.content:
+                logger.error(f"Empty content from {original_url}")
+                return original_url
+
+            def _is_valid_image(content: bytes, content_type: str) -> bool:
+                """Validate image content using magic numbers"""
+                if not content_type.startswith("image/"):
+                    return False
+                
+                try:
+                    # Check first few bytes for image signatures
+                    if len(content) < 12:
+                        return False
+                        
+                    if content.startswith(b"\xFF\xD8\xFF"):
+                        return True  # JPEG
+                    if content.startswith(b"\x89PNG\r\n\x1A\n"):
+                        return True  # PNG
+                    if content[0:4] == b"RIFF" and content[8:12] == b"WEBP":
+                        return True  # WEBP
+                    if content[0:3] == b"GIF":
+                        return True  # GIF
+                        
+                except Exception as e:
+                    logger.error(f"Image validation error: {e}")
+                    
+                return False
+
+            # Perform validation
+            content_type = response.headers.get("Content-Type", "")
+            if not _is_valid_image(response.content, content_type):
+                logger.error(f"Invalid image content from {original_url} (Content-Type: {content_type})")
+                return original_url
+
         except Exception as e:
             logger.error(f"Failed to download resource from {original_url}: {e}")
             return original_url  # Return original URL on failure
-        # 下载的图片内容需要验证是否是真的图片而不是文档，如果是文档返回 original_url AI!
+
         # Generate content-hashed object key
         content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
         extension_map = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
