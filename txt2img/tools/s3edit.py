@@ -191,10 +191,10 @@ class S3editTool(Tool):
 
             # Process all URLs - convert non-image URLs to TOS
             for url in all_image_urls:
-            if self._is_image_url(url):
-                processed_urls.append(url)
-            else:
-                try:
+                if self._is_image_url(url):
+                    processed_urls.append(url)
+                else:
+                    try:
                     # Save to TOS and get new URL
                     new_url = self.save_tos(credentials=credentials, original_url=url)
                     processed_urls.append(new_url)
