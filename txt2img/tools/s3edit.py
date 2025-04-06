@@ -72,45 +72,46 @@ class S3editTool(Tool):
                 logger.error(f"Empty content from {original_url}")
                 return original_url
 
-            def _is_valid_image(content: bytes, content_type: str) -> bool:  # 这个模型同时返回是否和类型，用在后面的调用中 AI!
-                """Validate image content using magic numbers"""
+            def _is_valid_image(content: bytes) -> tuple[bool, str]:
+                """Validate image content using magic numbers, returns (is_valid, detected_type)"""
                 try:
-                    # Check first few bytes for image signatures
                     if len(content) < 12:
-                        return False
+                        return False, ""
 
                     if content.startswith(b"\xff\xd8\xff"):
-                        return True  # JPEG
+                        return True, "image/jpeg"
                     if content.startswith(b"\x89PNG\r\n\x1a\n"):
-                        return True  # PNG
+                        return True, "image/png"
                     if content[0:4] == b"RIFF" and content[8:12] == b"WEBP":
-                        return True  # WEBP
+                        return True, "image/webp"
                     if content[0:3] == b"GIF":
-                        return True  # GIF
-
-                    # Additional check for mislabeled PNG files
+                        return True, "image/gif"
                     if len(content) > 8 and content[1:4] == b"PNG":
-                        return True
+                        return True, "image/png"
 
                 except Exception as e:
                     logger.error(f"Image validation error: {e}")
-
-                return False
+                
+                return False, ""
 
             # Perform validation
-            content_type = response.headers.get("Content-Type", "")
-            if not _is_valid_image(response.content, content_type):
-                logger.error(f"Invalid image content from {original_url} (Content-Type: {content_type})")
+            is_valid, detected_type = _is_valid_image(response.content)
+            if not is_valid:
+                logger.error(f"Invalid image content from {original_url} (Detected type: {detected_type})")
                 return original_url
 
         except Exception as e:
             logger.error(f"Failed to download resource from {original_url}: {e}")
             return original_url  # Return original URL on failure
 
-        # Generate content-hashed object key
-        content_type = response.headers.get("Content-Type", "image/png").split("/")[-1]
-        extension_map = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
-        file_ext = extension_map.get(content_type.split(";")[0].lower(), "png")  # Handle charset params
+        # Generate content-hashed object key using detected type
+        type_map = {
+            "image/jpeg": "jpg",
+            "image/png": "png", 
+            "image/webp": "webp",
+            "image/gif": "gif"
+        }
+        file_ext = type_map.get(detected_type, "png")
         content_hash = hashlib.sha256(response.content).hexdigest()
         object_key = f"s3edit/{content_hash}.{file_ext}"
 
