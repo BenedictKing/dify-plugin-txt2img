@@ -80,6 +80,13 @@ class S3editTool(Tool):
 
         return False, ""
 
+    FILE_TYPE_MAP = {
+        "image/jpeg": "jpg", 
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif"
+    }
+
     def save_tos(self, credentials: dict, original_url: str) -> str:
         """Upload external resource to TOS and return new URL"""
         import tos
@@ -106,8 +113,7 @@ class S3editTool(Tool):
             return original_url  # Return original URL on failure
 
         # Generate content-hashed object key using detected type
-        type_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}  # 这个也可以提取到外部 AI!
-        file_ext = type_map.get(detected_type, "png")
+        file_ext = self.FILE_TYPE_MAP.get(detected_type, "png")
         content_hash = hashlib.sha256(response.content).hexdigest()
         object_key = f"s3edit/{content_hash}.{file_ext}"
 
