@@ -72,7 +72,7 @@ class S3editTool(Tool):
                 logger.error(f"Empty content from {original_url}")
                 return original_url
 
-            def _is_valid_image(content: bytes) -> tuple[bool, str]:
+            def _is_valid_image(content: bytes) -> tuple[bool, str]:  # 这个函数提取到外面 AI!
                 """Validate image content using magic numbers, returns (is_valid, detected_type)"""
                 try:
                     if len(content) < 12:
@@ -91,7 +91,7 @@ class S3editTool(Tool):
 
                 except Exception as e:
                     logger.error(f"Image validation error: {e}")
-                
+
                 return False, ""
 
             # Perform validation
@@ -105,12 +105,7 @@ class S3editTool(Tool):
             return original_url  # Return original URL on failure
 
         # Generate content-hashed object key using detected type
-        type_map = {
-            "image/jpeg": "jpg",
-            "image/png": "png", 
-            "image/webp": "webp",
-            "image/gif": "gif"
-        }
+        type_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
         file_ext = type_map.get(detected_type, "png")
         content_hash = hashlib.sha256(response.content).hexdigest()
         object_key = f"s3edit/{content_hash}.{file_ext}"
