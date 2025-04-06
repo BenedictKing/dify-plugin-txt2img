@@ -72,7 +72,7 @@ class S3editTool(Tool):
                 logger.error(f"Empty content from {original_url}")
                 return original_url
 
-            def _is_valid_image(content: bytes, content_type: str) -> bool:
+            def _is_valid_image(content: bytes, content_type: str) -> bool:  # 这个模型同时返回是否和类型，用在后面的调用中 AI!
                 """Validate image content using magic numbers"""
                 try:
                     # Check first few bytes for image signatures
