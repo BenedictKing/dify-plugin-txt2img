@@ -201,18 +201,21 @@ class S3editTool(Tool):
 
             # Handle case where no new URLs were processed (user modifying previous request)
             if not processed_urls:
-                try:
-                    # 1. Get conversation history
-                    existing_data = self.session.storage.get(storage_key)
-                    if existing_data:
-                        history = json.loads(existing_data.decode())
+                if dialogue_count == 0:  # 新增判断条件
+                    instruction_to_use = instruction_text  # 直接使用原始指令
+                else:
+                    try:
+                        # 1. Get conversation history
+                        existing_data = self.session.storage.get(storage_key)
+                        if existing_data:
+                            history = json.loads(existing_data.decode())
 
-                        # 2. Prepare LLM analysis prompt
-                        history_context = "\n".join(
-                            f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
-                            for entry in history
-                        )
-                        analysis_prompt = f"""Analyze conversation history to identify EXACTLY which images the user wants to modify:
+                            # 2. Prepare LLM analysis prompt
+                            history_context = "\n".join(
+                                f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
+                                for entry in history
+                            )
+                            analysis_prompt = f"""Analyze conversation history to identify EXACTLY which images the user wants to modify:
 {history_context}
 
 Current request: {instruction_to_use}
@@ -222,35 +225,35 @@ Respond in JSON format with:
 2. target_image_urls: Array of image URLs to modify (MUST exist in history)
 3. revised_instruction: Revised prompt combining history and current request"""
 
-                        # 3. Call LLM for analysis
-                        analysis_response = requests.post(
-                            openai_url,
-                            headers={"Authorization": f"Bearer {openai_api_key}"},
-                            json={"model": "deepseek-v3", "messages": [{"role": "user", "content": analysis_prompt}], "temperature": 0.2},
-                        ).json()
+                            # 3. Call LLM for analysis
+                            analysis_response = requests.post(
+                                openai_url,
+                                headers={"Authorization": f"Bearer {openai_api_key}"},
+                                json={"model": "deepseek-v3", "messages": [{"role": "user", "content": analysis_prompt}], "temperature": 0.2},
+                            ).json()
 
-                        # 4. Parse and apply results
-                        analysis = json.loads(analysis_response["choices"][0]["message"]["content"])
-                        for entry in history:
-                            if entry["dialogue_count"] == analysis["reference_round"]:
-                                # Verify URLs exist in history and match user request
-                                valid_urls = [url for url in analysis.get("target_image_urls", []) if url in entry.get("image_urls", [])]
-                                processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
+                            # 4. Parse and apply results
+                            analysis = json.loads(analysis_response["choices"][0]["message"]["content"])
+                            for entry in history:
+                                if entry["dialogue_count"] == analysis["reference_round"]:
+                                    # Verify URLs exist in history and match user request
+                                    valid_urls = [url for url in analysis.get("target_image_urls", []) if url in entry.get("image_urls", [])]
+                                    processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
 
-                                # Combine instructions with clear separation
-                                instruction_to_use = f"{analysis['revised_instruction']}\n\n(修改要求: {instruction_to_use})"
-                                break
+                                    # Combine instructions with clear separation
+                                    instruction_to_use = f"{analysis['revised_instruction']}\n\n(修改要求: {instruction_to_use})"
+                                    break
 
-                except Exception as e:
-                    logger.error(f"History analysis failed: {e}")
-                    yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
-                    return
+                    except Exception as e:
+                        logger.error(f"History analysis failed: {e}")
+                        yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
+                        return
 
             # 2. Store initial conversation history (only if not a retry)
             history_entry = {
                 "dialogue_count": dialogue_count,
-                "instruction": instruction_to_use,  # Store the instruction used
-                "image_urls": processed_urls,  # Store the processed URLs
+                "instruction": instruction_text if dialogue_count == 0 else instruction_to_use,  # 首次对话存原始指令
+                "image_urls": processed_urls,
             }
             try:
                 existing_data = self.session.storage.get(storage_key)
