@@ -106,7 +106,7 @@ class S3editTool(Tool):
             return original_url  # Return original URL on failure
 
         # Generate content-hashed object key using detected type
-        type_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
+        type_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}  # 这个也可以提取到外部 AI!
         file_ext = type_map.get(detected_type, "png")
         content_hash = hashlib.sha256(response.content).hexdigest()
         object_key = f"s3edit/{content_hash}.{file_ext}"
