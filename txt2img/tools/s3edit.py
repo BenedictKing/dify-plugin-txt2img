@@ -80,12 +80,7 @@ class S3editTool(Tool):
 
         return False, ""
 
-    FILE_TYPE_MAP = {
-        "image/jpeg": "jpg", 
-        "image/png": "png",
-        "image/webp": "webp",
-        "image/gif": "gif"
-    }
+    FILE_TYPE_MAP = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
 
     def save_tos(self, credentials: dict, original_url: str) -> str:
         """Upload external resource to TOS and return new URL"""
@@ -256,7 +251,7 @@ Respond in JSON format with:
                 "image_urls": processed_urls,
             }
             try:
-                existing_data = self.session.storage.get(storage_key)
+                existing_data = self.session.storage.get(storage_key)  # 初次调用肯定找不到key对应的数据 AI!
                 history = json.loads(existing_data.decode()) if existing_data else []
 
                 updated = False
