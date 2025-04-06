@@ -57,6 +57,29 @@ class S3editTool(Tool):
 
         return headers, cookies
 
+    @staticmethod
+    def _is_valid_image(content: bytes) -> tuple[bool, str]:
+        """Validate image content using magic numbers, returns (is_valid, detected_type)"""
+        try:
+            if len(content) < 12:
+                return False, ""
+
+            if content.startswith(b"\xff\xd8\xff"):
+                return True, "image/jpeg"
+            if content.startswith(b"\x89PNG\r\n\x1a\n"):
+                return True, "image/png"
+            if content[0:4] == b"RIFF" and content[8:12] == b"WEBP":
+                return True, "image/webp"
+            if content[0:3] == b"GIF":
+                return True, "image/gif"
+            if len(content) > 8 and content[1:4] == b"PNG":
+                return True, "image/png"
+
+        except Exception as e:
+            logger.error(f"Image validation error: {e}")
+
+        return False, ""
+
     def save_tos(self, credentials: dict, original_url: str) -> str:
         """Upload external resource to TOS and return new URL"""
         import tos
@@ -71,8 +94,6 @@ class S3editTool(Tool):
             if not response.content:
                 logger.error(f"Empty content from {original_url}")
                 return original_url
-
-            def _is_valid_image(content: bytes) -> tuple[bool, str]:  # 这个函数提取到外面 AI!
                 """Validate image content using magic numbers, returns (is_valid, detected_type)"""
                 try:
                     if len(content) < 12:
@@ -95,7 +116,7 @@ class S3editTool(Tool):
                 return False, ""
 
             # Perform validation
-            is_valid, detected_type = _is_valid_image(response.content)
+            is_valid, detected_type = self._is_valid_image(response.content)
             if not is_valid:
                 logger.error(f"Invalid image content from {original_url} (Detected type: {detected_type})")
                 return original_url
