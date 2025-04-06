@@ -251,18 +251,10 @@ Respond in JSON format with:
                 "image_urls": processed_urls,
             }
             try:
-                existing_data = self.session.storage.get(storage_key)  # 初次调用肯定找不到key对应的数据 AI!
+                # Directly append new entry without checking existence
+                existing_data = self.session.storage.get(storage_key)
                 history = json.loads(existing_data.decode()) if existing_data else []
-
-                updated = False
-                for i, entry in enumerate(history):
-                    if entry.get("dialogue_count") == dialogue_count:
-                        history[i] = history_entry  # Update existing entry
-                        updated = True
-                        break
-                if not updated:
-                    history.append(history_entry)  # Append new entry
-
+                history.append(history_entry)
                 self.session.storage.set(storage_key, json.dumps(history).encode())
             except Exception as e:
                 logger.error(f"Failed to save initial conversation history: {e}")
