@@ -74,11 +74,6 @@ class S3editTool(Tool):
 
             def _is_valid_image(content: bytes, content_type: str) -> bool:
                 """Validate image content using magic numbers"""
-                if not content_type.startswith(
-                    "image/"
-                ):  # 可能不是image开头 例如 ERROR:tools.s3edit:Invalid image content from https://dify.diyai.diy/files/844daccb-90d9-4160-9273-ff174b97c395/file-preview?timestamp=1743900438&nonce=fbe3e9355f9b939d50317282437910a2&sign=cISP7mwTSl00JTSDD0E_FGcNoYXHC9HMcIRMVZ4EYiY= (Content-Type: application/octet-stream) 其实这个文件是png格式 AI!
-                    return False
-
                 try:
                     # Check first few bytes for image signatures
                     if len(content) < 12:
@@ -92,6 +87,10 @@ class S3editTool(Tool):
                         return True  # WEBP
                     if content[0:3] == b"GIF":
                         return True  # GIF
+
+                    # Additional check for mislabeled PNG files
+                    if len(content) > 8 and content[1:4] == b"PNG":
+                        return True
 
                 except Exception as e:
                     logger.error(f"Image validation error: {e}")
