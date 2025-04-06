@@ -94,26 +94,6 @@ class S3editTool(Tool):
             if not response.content:
                 logger.error(f"Empty content from {original_url}")
                 return original_url
-                """Validate image content using magic numbers, returns (is_valid, detected_type)"""
-                try:
-                    if len(content) < 12:
-                        return False, ""
-
-                    if content.startswith(b"\xff\xd8\xff"):
-                        return True, "image/jpeg"
-                    if content.startswith(b"\x89PNG\r\n\x1a\n"):
-                        return True, "image/png"
-                    if content[0:4] == b"RIFF" and content[8:12] == b"WEBP":
-                        return True, "image/webp"
-                    if content[0:3] == b"GIF":
-                        return True, "image/gif"
-                    if len(content) > 8 and content[1:4] == b"PNG":
-                        return True, "image/png"
-
-                except Exception as e:
-                    logger.error(f"Image validation error: {e}")
-
-                return False, ""
 
             # Perform validation
             is_valid, detected_type = self._is_valid_image(response.content)
