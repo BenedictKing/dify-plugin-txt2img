@@ -212,23 +212,24 @@ class S3editTool(Tool):
                     instruction_to_use = instruction_text  # 直接使用原始指令
                 else:
                     try:  # 提示词应该是要求AI根据之前的聊天记录分析当前用户是要修改哪个图片，如果没有额外提及大概率都是最后一个 AI!
-                        analysis_prompt = f"""请分析当前修改请求并准确识别：
-1. 需要修改的目标图片URL列表（从历史记录或当前请求中提取）
-2. 结合历史记录和当前请求优化后的完整提示词
+                        analysis_prompt = f"""请分析当前修改请求并确定：
+1. 需要修改的目标图片URL（优先使用用户明确指定的，否则默认使用最近生成的图片）
+2. 优化后的完整提示词（保留原始意图）
 
-请严格按以下要求返回JSON格式：
-- 必须包含target_image_urls数组（即使为空）
-- revised_instruction应保留原始请求的核心意图
-- 若无法确定修改目标，target_image_urls应为空数组
+关键规则：
+- 如果用户没有明确指定图片，默认使用最近生成的图片（历史记录中的最后一个图片URL）
+- 如果完全没有可用的图片URL，target_image_urls返回空数组
+- 确保revised_instruction清晰明确
 
 当前请求内容：{instruction_text}
-历史记录：{json.dumps(history[-3:], ensure_ascii=False) if history else "无"}
+相关历史记录（最近3条）：
+{json.dumps(history[-3:], ensure_ascii=False) if history else "无历史记录"}
 
-返回格式示例：
+返回严格JSON格式：
 ```json
 {{
-  "target_image_urls": ["图片URL1", "图片URL2"],
-  "revised_instruction": "优化后的完整提示词"
+  "target_image_urls": ["图片URL"],  // 数组，即使为空
+  "revised_instruction": "优化后的提示词"  // 必须包含
 }}
 ```"""
                         logger.info(f"LLM analysis_prompt: {analysis_prompt}")
