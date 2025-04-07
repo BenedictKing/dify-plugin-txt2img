@@ -216,7 +216,7 @@ class S3editTool(Tool):
 1. target_image_urls: Array of image URLs to modify (extract from request if any)
 2. revised_instruction: Revised prompt combining history and current request
 
-Respond in JSON format with these two fields only."""
+Respond in JSON format with these two fields only."""  # 这个提示词质量不如之前的 AI!
                         logger.info(f"LLM analysis_prompt: {analysis_prompt}")
 
                         # 3. Call LLM for analysis
@@ -239,7 +239,7 @@ Respond in JSON format with these two fields only."""
                             else:
                                 # 如果没有```json标记，尝试直接解析整个内容
                                 analysis = json.loads(response_content)
-                                
+
                             logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
 
                             # 验证必要字段
@@ -249,11 +249,11 @@ Respond in JSON format with these two fields only."""
                                 logger.error(f"分析结果缺少必要字段: {missing}")
                                 yield self.create_text_message("分析失败：返回结果字段缺失")
                                 return
-                                
+
                             # 确保target_image_urls是列表且不为空
                             if not isinstance(analysis.get("target_image_urls"), list):
                                 analysis["target_image_urls"] = []
-                            
+
                             # 直接使用LLM提取的URLs
                             processed_urls = analysis["target_image_urls"]
                             instruction_to_use = analysis["revised_instruction"]
@@ -366,7 +366,7 @@ Respond in JSON format with these two fields only."""
 
             # Update conversation history AFTER receiving content (runs for both new and retry)
             logger.info(f"Final processed_urls before saving with response: {processed_urls}")
-            
+
             # Reconstruct the entry to include the response
             history_entry_with_response = {
                 "dialogue_count": dialogue_count,
