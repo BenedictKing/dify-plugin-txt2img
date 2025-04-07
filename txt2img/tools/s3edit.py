@@ -191,8 +191,7 @@ class S3editTool(Tool):
             logger.info(f"Processing new request or request without history for dialogue_count {dialogue_count}.")
             # 1. Process URLs
             instruction_text = tool_parameters["instruction"]  # Use the current instruction
-        instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
-
+            instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
             uploaded_image_urls = [image.url for image in images] if images else []
             all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
 
