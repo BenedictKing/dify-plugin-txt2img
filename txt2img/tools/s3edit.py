@@ -162,7 +162,11 @@ class S3editTool(Tool):
             if existing_data:
                 logger.info("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
                 history = json.loads(existing_data.decode())
-                logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
+                logger.info(
+                    "Loaded conversation history [conversation_id=%s]\n%s",
+                    conversation_id,
+                    json.dumps(history, indent=2, ensure_ascii=False)
+                )
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
@@ -223,7 +227,11 @@ class S3editTool(Tool):
                         if existing_data:
                             logger.info("Loading analysis history [conversation_id=%s, exists=True]", conversation_id)
                             history = json.loads(existing_data.decode())
-                            logger.info("Analysis history entries [conversation_id=%s, count=%d]", conversation_id, len(history))
+                            logger.info(
+                                "Analysis history content [conversation_id=%s]\n%s",
+                                conversation_id,
+                                json.dumps(history, indent=2, ensure_ascii=False)
+                            )
                         else:
                             logger.info("No analysis history found [conversation_id=%s]", conversation_id)
                             history = []
@@ -327,14 +335,17 @@ Respond in JSON format with:
                 # Keep only last 10 entries
                 if len(history) > 10:
                     history = history[-10:]
-                    logger.info(f"Truncated history to last 10 entries")
+                    logger.info(
+                        "Truncated history [conversation_id=%s]\n%s",
+                        conversation_id,
+                        json.dumps(history[-10:], indent=2, ensure_ascii=False)
+                    )
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info(
-                    "Conversation history updated [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
+                    "Updated conversation history [conversation_id=%s]\n%s",
                     conversation_id,
-                    dialogue_count,
-                    json.dumps(history, indent=2, ensure_ascii=False),
+                    json.dumps(history, indent=2, ensure_ascii=False)
                 )
             except Exception as e:
                 logger.error(f"Failed to save initial conversation history: {e}")
@@ -432,10 +443,9 @@ Respond in JSON format with:
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info(
-                    "Conversation history updated with response [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
+                    "Updated conversation history with response [conversation_id=%s]\n%s",
                     conversation_id,
-                    dialogue_count,
-                    json.dumps(history, indent=2, ensure_ascii=False),
+                    json.dumps(history, indent=2, ensure_ascii=False)
                 )
             except Exception as e:
                 logger.error(f"Failed to update conversation history with response: {e}")
