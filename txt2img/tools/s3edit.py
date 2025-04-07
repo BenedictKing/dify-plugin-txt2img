@@ -154,28 +154,28 @@ class S3editTool(Tool):
         processed_urls = []
         instruction_to_use = tool_parameters["instruction"]  # Default to new instruction
         is_retry = False
-        storage_key = f"s3edit_history_{conversation_id}"
+            storage_key = f"s3edit_history_{conversation_id}"
         # Check for existing history entry for this specific dialogue_count at the beginning
 
-        try:
-            existing_data = self.session.storage.get(storage_key)
-            if existing_data:
+            try:
+                existing_data = self.session.storage.get(storage_key)
+                if existing_data:
                 logger.info("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
-                history = json.loads(existing_data.decode())
+                    history = json.loads(existing_data.decode())
                 logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
-                # Find matching historical entry
-                for entry in history:
-                    if entry.get("dialogue_count") == dialogue_count:
+                    # Find matching historical entry
+                    for entry in history:
+                        if entry.get("dialogue_count") == dialogue_count:
                         logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
                         is_retry = True
-                        processed_urls = entry.get("image_urls", [])
+                            processed_urls = entry.get("image_urls", [])
                         instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
                         # If response content exists, we still re-request as per retry logic
                         break  # Found the entry, no need to check further
-        except Exception as e:
+            except Exception as e:
             # 初始化空历史记录
             try:
                 logger.warning("Initializing blank history for new conversation")
@@ -190,7 +190,7 @@ class S3editTool(Tool):
             logger.info(f"Processing new request or request without history for dialogue_count {dialogue_count}.")
             # 1. Process URLs
             instruction_text = tool_parameters["instruction"]  # Use the current instruction
-            instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
+        instruction_urls = re.findall(r"(https?://\S+)", instruction_text)
 
             uploaded_image_urls = [image.url for image in images] if images else []
             all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
@@ -251,7 +251,7 @@ Respond in JSON format with:
                             ).json()
 
                             # 4. Parse and apply results
-                            analysis = json.loads(analysis_response["choices"][0]["message"]["content"])
+                            analysis = json.loads(analysis_response["choices"][0]["message"]["content"]) #这里可能出错 因为可能返回的格式是文本```json{"reference_round": 0,"target_image_urls": ["https://filesystem.site/cdn/20250407/DHfatNMp93cZzygqcvGvUt5PoP7sE3.png"],"revised_instruction": "画一只小狗在追蜜蜂"}``` AI!
                             for entry in history:
                                 if entry["dialogue_count"] == analysis["reference_round"]:
                                     # Verify URLs exist in history and match user request
@@ -372,27 +372,14 @@ Respond in JSON format with:
             logger.info("Full response content: %s", content)
 
             # Update conversation history AFTER receiving content (runs for both new and retry)
-            image_urls = re.findall(r"!\[.*?\]\(\s*(https?://[^\s)]+)\s*\)", content)
-            if image_urls:
-                logger.info(f"Extracted image URLs: {image_urls}")
-                final_image_urls = image_urls
-            else:
-                logger.error("No image URLs detected in API response content")
-                final_image_urls = processed_urls
 
             # Reconstruct the entry to include the response
             history_entry_with_response = {
                 "dialogue_count": dialogue_count,
                 "instruction": instruction_to_use,  # Use the instruction that was actually sent
-                "image_urls": final_image_urls,
+                "image_urls": processed_urls,
                 "response_content": content,  # Add response content
             }
-
-            # Validate before saving
-            if not history_entry_with_response.get("image_urls"):
-                logger.error("Aborting history update: image_urls is empty")
-                yield self.create_text_message("生成失败：无法提取图片URL")
-                return
             try:
                 existing_data = self.session.storage.get(storage_key)
                 logger.info("Initial storage check [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
@@ -427,7 +414,7 @@ Respond in JSON format with:
             except Exception as e:
                 logger.error(f"Failed to update conversation history with response: {e}")
 
-            image_urls = re.findall(r"!\[.*?\]\(\s*(https?://[^\s)]+)\s*\)", content)
+            image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
                 logger.info("Detected %d image URLs in response", len(image_urls))
                 last_url = image_urls[-1]
