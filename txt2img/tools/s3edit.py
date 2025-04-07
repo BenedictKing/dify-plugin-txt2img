@@ -179,7 +179,7 @@ class S3editTool(Tool):
         except Exception as e:
             logger.error(f"History initialization failed: {e}")
             history = []
-
+        is_retry = False
         # Only process URLs and save initial history if it's NOT a retry
         if not is_retry:
             logger.info(f"Processing new request or request without history for dialogue_count {dialogue_count}.")
@@ -227,6 +227,7 @@ Respond in JSON format with:
 1. reference_round: The dialogue_count containing target images
 2. target_image_urls: Array of image URLs to modify (MUST exist in history)
 3. revised_instruction: Revised prompt combining history and current request"""
+                        logger.info(f"LLM analysis_prompt: {analysis_prompt}")
 
                         # 3. Call LLM for analysis
                         analysis_response = requests.post(
@@ -237,7 +238,7 @@ Respond in JSON format with:
 
                         # 4. Parse and apply results
                         response_content = analysis_response["choices"][0]["message"]["content"]
-                        logger.debug(f"原始分析响应内容:\n{response_content}")
+                        logger.info(f"原始分析响应内容:\n{response_content}")
 
                         try:
                             # 尝试提取被```json包裹的JSON内容
@@ -254,7 +255,7 @@ Respond in JSON format with:
                                 yield self.create_text_message("分析失败：服务返回格式异常")
                                 return
 
-                        logger.debug(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
+                        logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
 
                         # 验证必要字段
                         required_keys = ["reference_round", "target_image_urls", "revised_instruction"]
