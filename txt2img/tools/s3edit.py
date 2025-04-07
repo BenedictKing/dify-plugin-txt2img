@@ -13,7 +13,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from tos.exceptions import TosServerError
 from yarl import URL
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -89,9 +89,9 @@ class S3editTool(Tool):
         # Download original resource
         headers, cookies = self._generate_headers()
         try:
-            logger.debug(f"Downloading external resource from {original_url}")
+            logger.info(f"Downloading external resource from {original_url}")
             response = requests.get(original_url, headers=headers, cookies=cookies, timeout=60)
-            logger.debug(f"Download completed [status={response.status_code}, content_length={len(response.content)}]")
+            logger.info(f"Download completed [status={response.status_code}, content_length={len(response.content)}]")
             response.raise_for_status()
 
             # Add image validation check
@@ -126,7 +126,7 @@ class S3editTool(Tool):
 
         # Check if object exists before uploading
         try:
-            logger.debug("Checking TOS object existence [bucket=%s, key=%s]", bucket_name, object_key)
+            logger.info("Checking TOS object existence [bucket=%s, key=%s]", bucket_name, object_key)
             client.head_object(bucket=bucket_name, key=object_key)
             logger.info(f"File {content_hash} already exists in TOS bucket")
         except TosServerError as e:
@@ -160,11 +160,11 @@ class S3editTool(Tool):
         try:
             existing_data = self.session.storage.get(storage_key)
             if existing_data:
-                logger.debug("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
+                logger.info("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
                 history = json.loads(existing_data.decode())
-                logger.debug("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
+                logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
             else:
-                logger.debug("No existing history found [conversation_id=%s]", conversation_id)
+                logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
                 # Find matching historical entry
                 for entry in history:
@@ -196,7 +196,7 @@ class S3editTool(Tool):
             all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
 
             logger.info("Processing image URLs [total=%d, uploaded=%d, from_instruction=%d]", len(all_image_urls), len(uploaded_image_urls), len(instruction_urls))
-            logger.debug("Full URL list: %s", [str(URL(url).host) for url in all_image_urls])
+            logger.info("Full URL list: %s", [str(URL(url).host) for url in all_image_urls])
 
             current_processed_urls = []  # Use a temporary list for new processing
             for url in all_image_urls:
@@ -221,11 +221,11 @@ class S3editTool(Tool):
                         # 1. Get conversation history
                         existing_data = self.session.storage.get(storage_key)
                         if existing_data:
-                            logger.debug("Loading analysis history [conversation_id=%s, exists=True]", conversation_id)
+                            logger.info("Loading analysis history [conversation_id=%s, exists=True]", conversation_id)
                             history = json.loads(existing_data.decode())
-                            logger.debug("Analysis history entries [conversation_id=%s, count=%d]", conversation_id, len(history))
+                            logger.info("Analysis history entries [conversation_id=%s, count=%d]", conversation_id, len(history))
                         else:
-                            logger.debug("No analysis history found [conversation_id=%s]", conversation_id)
+                            logger.info("No analysis history found [conversation_id=%s]", conversation_id)
                             history = []
 
                             # 2. Prepare LLM analysis prompt
@@ -276,12 +276,12 @@ Respond in JSON format with:
             try:
                 # Directly append new entry without checking existence
                 existing_data = self.session.storage.get(storage_key)
-                logger.debug("Loading conversation history [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
+                logger.info("Loading conversation history [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
                 history = json.loads(existing_data.decode()) if existing_data else []
-                logger.debug("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
+                logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
                 history.append(history_entry)
                 self.session.storage.set(storage_key, json.dumps(history).encode())
-                logger.debug(
+                logger.info(
                     "Conversation history updated [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
                     conversation_id,
                     dialogue_count,
@@ -319,12 +319,12 @@ Respond in JSON format with:
 
             content = ""
             if stream:
-                logger.debug("Starting to process streaming response")
+                logger.info("Starting to process streaming response")
                 # 如果是流式响应，需要拼接内容
                 for line in response.iter_lines():
                     if line:
                         line_text = line.decode("utf-8")
-                        logger.debug("Received streaming chunk: %s", line_text[:100])  # 记录前100字符
+                        logger.info("Received streaming chunk: %s", line_text[:100])  # 记录前100字符
                     if line:
                         # 移除"data: "前缀并解析JSON
                         line_text = line.decode("utf-8")
@@ -342,9 +342,9 @@ Respond in JSON format with:
                                 logger.warning(f"无法解析JSON: {json_str}")
 
             else:
-                logger.debug("Processing non-streaming response")
+                logger.info("Processing non-streaming response")
                 content = response.json()["choices"][0]["message"]["content"]
-                logger.debug("Full response content: %s", content[:200])  # 记录前200字符
+                logger.info("Full response content: %s", content[:200])  # 记录前200字符
                 yield self.create_text_message(content)
 
             logger.info(content)
@@ -360,7 +360,7 @@ Respond in JSON format with:
             }
             try:
                 existing_data = self.session.storage.get(storage_key)
-                logger.debug("Initial storage check [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
+                logger.info("Initial storage check [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
                 history = json.loads(existing_data.decode()) if existing_data else []
 
                 updated = False
@@ -375,7 +375,7 @@ Respond in JSON format with:
                     history.append(history_entry_with_response)
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
-                logger.debug(
+                logger.info(
                     "Conversation history updated with response [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
                     conversation_id,
                     dialogue_count,
@@ -388,7 +388,7 @@ Respond in JSON format with:
             if image_urls:
                 logger.info("Detected %d image URLs in response", len(image_urls))
                 last_url = image_urls[-1]
-                logger.debug("Processing last image URL: %s", str(URL(last_url).host))
+                logger.info("Processing last image URL: %s", str(URL(last_url).host))
                 if not self._is_image_url(last_url):
                     logger.info(f"unknown image url: {last_url}")
                     try:
