@@ -89,7 +89,9 @@ class S3editTool(Tool):
         # Download original resource
         headers, cookies = self._generate_headers()
         try:
+            logger.debug(f"Downloading external resource from {original_url}")
             response = requests.get(original_url, headers=headers, cookies=cookies, timeout=60)
+            logger.debug(f"Download completed [status={response.status_code}, content_length={len(response.content)}]")
             response.raise_for_status()
 
             # Add image validation check
@@ -124,6 +126,7 @@ class S3editTool(Tool):
 
         # Check if object exists before uploading
         try:
+            logger.debug("Checking TOS object existence [bucket=%s, key=%s]", bucket_name, object_key)
             client.head_object(bucket=bucket_name, key=object_key)
             logger.info(f"File {content_hash} already exists in TOS bucket")
         except TosServerError as e:
@@ -186,6 +189,14 @@ class S3editTool(Tool):
 
             uploaded_image_urls = [image.url for image in images] if images else []
             all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
+            
+            logger.info(
+                "Processing image URLs [total=%d, uploaded=%d, from_instruction=%d]",
+                len(all_image_urls),
+                len(uploaded_image_urls), 
+                len(instruction_urls)
+            )
+            logger.debug("Full URL list: %s", [str(URL(url).host) for url in all_image_urls])
 
             current_processed_urls = []  # Use a temporary list for new processing
             for url in all_image_urls:
@@ -311,9 +322,12 @@ Respond in JSON format with:
 
             content = ""
             if stream:
+                logger.debug("Starting to process streaming response")
                 # 如果是流式响应，需要拼接内容
                 for line in response.iter_lines():
-                    # logger.info(line)
+                    if line:
+                        line_text = line.decode('utf-8')
+                        logger.debug("Received streaming chunk: %s", line_text[:100])  # 记录前100字符
                     if line:
                         # 移除"data: "前缀并解析JSON
                         line_text = line.decode("utf-8")
@@ -331,8 +345,9 @@ Respond in JSON format with:
                                 logger.warning(f"无法解析JSON: {json_str}")
 
             else:
-                # 非流式响应直接获取内容
+                logger.debug("Processing non-streaming response")
                 content = response.json()["choices"][0]["message"]["content"]
+                logger.debug("Full response content: %s", content[:200])  # 记录前200字符
                 yield self.create_text_message(content)
 
             logger.info(content)
@@ -348,6 +363,11 @@ Respond in JSON format with:
             }
             try:
                 existing_data = self.session.storage.get(storage_key)
+                logger.debug(
+                    "Initial storage check [conversation_id=%s, exists=%s]",
+                    conversation_id,
+                    existing_data is not None
+                )
                 history = json.loads(existing_data.decode()) if existing_data else []
 
                 updated = False
@@ -373,7 +393,9 @@ Respond in JSON format with:
 
             image_urls = re.findall(r"!\[.*?\]\((https?://[^\s)]+)", content)
             if image_urls:
+                logger.info("Detected %d image URLs in response", len(image_urls))
                 last_url = image_urls[-1]
+                logger.debug("Processing last image URL: %s", str(URL(last_url).host))
                 if not self._is_image_url(last_url):
                     logger.info(f"unknown image url: {last_url}")
                     try:
