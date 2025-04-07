@@ -154,28 +154,29 @@ class S3editTool(Tool):
         processed_urls = []
         instruction_to_use = tool_parameters["instruction"]  # Default to new instruction
         is_retry = False
-            storage_key = f"s3edit_history_{conversation_id}"
+        storage_key = f"s3edit_history_{conversation_id}"
         # Check for existing history entry for this specific dialogue_count at the beginning
 
-            try:
-                existing_data = self.session.storage.get(storage_key)
-                if existing_data:
+        try:
+            existing_data = self.session.storage.get(storage_key)
+            if existing_data:
                 logger.info("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
-                    history = json.loads(existing_data.decode())
+                history = json.loads(existing_data.decode())
                 logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
-                    # Find matching historical entry
-                    for entry in history:
-                        if entry.get("dialogue_count") == dialogue_count:
-                        logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
-                        is_retry = True
-                            processed_urls = entry.get("image_urls", [])
-                        instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
-                        # If response content exists, we still re-request as per retry logic
-                        break  # Found the entry, no need to check further
-            except Exception as e:
+            
+            # Find matching historical entry
+            for entry in history:
+                if entry.get("dialogue_count") == dialogue_count:
+                    logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
+                    is_retry = True
+                    processed_urls = entry.get("image_urls", [])
+                    instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
+                    # If response content exists, we still re-request as per retry logic
+                    break  # Found the entry, no need to check further
+        except Exception as e:
             # 初始化空历史记录
             try:
                 logger.warning("Initializing blank history for new conversation")
