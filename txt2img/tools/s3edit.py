@@ -167,15 +167,12 @@ class S3editTool(Tool):
                 history = [entry for entry in history if entry.get("dialogue_count", 0) <= dialogue_count]
                 logger.info("Loaded conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
 
-                # Find matching historical entry
-                for entry in history:
-                    if entry.get("dialogue_count") == dialogue_count:  # 经过截断的聊天记录只需要读取最后一条进行判断 AI!
-                        logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
-                        is_retry = True
-                        processed_urls = entry.get("image_urls", [])
-                        instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
-                        # If response content exists, we still re-request as per retry logic
-                        break  # Found the entry, no need to check further
+                # Check only the last entry after truncation
+                if history and history[-1].get("dialogue_count") == dialogue_count:
+                    logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
+                    is_retry = True
+                    processed_urls = history[-1].get("image_urls", [])
+                    instruction_to_use = history[-1].get("instruction", tool_parameters["instruction"])
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
