@@ -168,7 +168,13 @@ class S3editTool(Tool):
                         # If response content exists, we still re-request as per retry logic
                         break  # Found the entry, no need to check further
         except Exception as e:
-            # 如果没找到应该创建空白的数据保存，方便后面的逻辑使用 AI!
+            # 初始化空历史记录
+            try:
+                logger.warning("Initializing blank history for new conversation")
+                history = []
+                self.session.storage.set(storage_key, json.dumps(history).encode())
+            except Exception as init_error:
+                logger.error(f"Failed to initialize blank history: {init_error}")
             logger.error(f"History lookup failed during retry check: {e}")
 
         # Only process URLs and save initial history if it's NOT a retry
