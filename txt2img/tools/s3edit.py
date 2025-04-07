@@ -295,18 +295,13 @@ Respond in JSON format with:
 
                 logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
 
-                existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)
+                existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)  # 这里也是 AI!
                 if existing_index != -1:
                     logger.info(f"Updating existing entry for dialogue_count {dialogue_count}")
                     history[existing_index] = history_entry
                 else:
                     logger.info(f"Appending new entry for dialogue_count {dialogue_count}")
                     history.append(history_entry)
-
-                # Keep only last 10 entries
-                if len(history) > 10:
-                    history = history[-10:]
-                    logger.info("Truncated history [conversation_id=%s]\n%s", conversation_id, json.dumps(history[-10:], indent=2, ensure_ascii=False))
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info("Updated conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
