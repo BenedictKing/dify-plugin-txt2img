@@ -179,7 +179,7 @@ class S3editTool(Tool):
         except Exception as e:
             logger.error(f"History initialization failed: {e}")
             history = []
-        is_retry = False
+
         # Only process URLs and save initial history if it's NOT a retry
         if not is_retry:
             logger.info(f"Processing new request or request without history for dialogue_count {dialogue_count}.")
@@ -211,27 +211,29 @@ class S3editTool(Tool):
                 if dialogue_count == 0:  # 新增判断条件
                     instruction_to_use = instruction_text  # 直接使用原始指令
                 else:
-                    try:  # 提示词应该是要求AI根据之前的聊天记录分析当前用户是要修改哪个图片，如果没有额外提及大概率都是最后一个 AI!
-                        analysis_prompt = f"""请分析当前修改请求并确定：
-1. 需要修改的目标图片URL（优先使用用户明确指定的，否则默认使用最近生成的图片）
-2. 优化后的完整提示词（保留原始意图）
+                    try:
+                        analysis_prompt = f"""
+**任务描述**：根据用户的聊天历史记录，分析用户当前的绘画任务是创建新图还是修改之前的结果。如果是创建新图，则输出用户的原始请求内容和空的图片URL数组；如果是修改，则输出小幅调整的请求内容和相关图片URL数组。
 
-关键规则：
-- 如果用户没有明确指定图片，默认使用最近生成的图片（历史记录中的最后一个图片URL）
-- 如果完全没有可用的图片URL，target_image_urls返回空数组
-- 确保revised_instruction清晰明确
+**分析步骤**：
 
-当前请求内容：{instruction_text}
-相关历史记录（最近3条）：
-{json.dumps(history[-3:], ensure_ascii=False) if history else "无历史记录"}
+1. **目标图片URL的确定**：
+   - **明确指定的图片**：优先使用用户明确指定的图片URL。
+   - **默认使用最近生成的图片**：如果用户没有明确指定，则使用历史记录中的最后一个图片URL作为默认值。
+   - **无可用图片**：如果完全没有可用的图片URL，则返回空数组。
 
-返回严格JSON格式：
+2. **优化后的提示词**：
+   - **保留原始意图**：确保优化后的提示词清晰明确，并保留用户原始的绘画意图。
+   - **小幅调整**：如果是修改任务，可以根据用户的修改请求进行小幅调整，让用户的修改意图更为明确。
+
+**输入内容**：
+- **当前请求内容**： `{instruction_text}`
+- **相关历史记录**： `{json.dumps([entry for entry in history if entry.get("dialogue_count", 0) < dialogue_count], ensure_ascii=False)}`
+
+**输出格式**：
 ```json
-{{
-  "target_image_urls": ["图片URL"],  // 数组，即使为空
-  "revised_instruction": "优化后的提示词"  // 必须包含
-}}
-```"""
+{"target_image_urls": ["图片URL"], "revised_instruction": "优化后的提示词"}
+```"""  # ERROR:tools.s3edit:History analysis failed: Invalid format specifier ' ["图片URL"], "revised_instruction": "优化后的提示词"' for object of type 'str' AI!
                         logger.info(f"LLM analysis_prompt: {analysis_prompt}")
 
                         # 3. Call LLM for analysis
@@ -378,9 +380,6 @@ class S3editTool(Tool):
                 yield self.create_text_message(content)
 
             logger.info("Full response content: %s", content)
-
-            # Update conversation history AFTER receiving content (runs for both new and retry)
-            logger.info(f"Final processed_urls before saving with response: {processed_urls}")
 
             # Reconstruct the entry to include the response
             history_entry_with_response = {
