@@ -265,20 +265,27 @@ Respond in JSON format with:
                                 analysis["target_image_urls"] = []
                                 
                             # 查找对应的历史记录
+                            logger.info(f"Searching history for reference_round={analysis['reference_round']}")
+                            found_entry = None
                             for entry in history:
                                 if entry["dialogue_count"] == analysis["reference_round"]:
-                                    # 优先使用LLM识别的URLs，但确保它们存在于历史记录中
-                                    valid_urls = [
-                                        url for url in analysis["target_image_urls"] 
-                                        if url in entry.get("image_urls", [])
-                                    ]
-                                    processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
-                                    instruction_to_use = analysis["revised_instruction"]
+                                    found_entry = entry
                                     break
-                            else:
+                            
+                            if not found_entry:
                                 logger.error(f"未找到对应的历史记录[reference_round={analysis['reference_round']}]")
                                 yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
                                 return
+                            
+                            # 优先使用LLM识别的URLs，但确保它们存在于历史记录中
+                            valid_urls = [
+                                url for url in analysis["target_image_urls"] 
+                                if url in found_entry.get("image_urls", [])
+                            ]
+                            processed_urls = valid_urls if valid_urls else found_entry.get("image_urls", [])
+                            instruction_to_use = analysis["revised_instruction"]
+                            logger.info(f"Updated processed_urls from analysis: {processed_urls}")
+                            logger.info(f"Updated instruction: {instruction_to_use}")
 
                         except json.JSONDecodeError as e:
                             logger.error(f"JSON解析失败: {e}\n原始内容: {response_content}")
@@ -291,11 +298,13 @@ Respond in JSON format with:
                         return
 
             # 2. Store initial conversation history (only if not a retry)
+            logger.info(f"Preparing to save history - current processed_urls: {processed_urls}")
             history_entry = {
                 "dialogue_count": dialogue_count,
-                "instruction": instruction_text if dialogue_count == 0 else instruction_to_use,  # 首次对话存原始指令
+                "instruction": instruction_to_use,  # 总是使用更新后的instruction
                 "image_urls": processed_urls,
             }
+            logger.info(f"History entry to save: {history_entry}")
             try:
                 existing_data = self.session.storage.get(storage_key)
                 logger.info("Loading conversation history [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
@@ -321,6 +330,10 @@ Respond in JSON format with:
                 logger.error(f"Failed to save initial conversation history: {e}")
 
         # Prepare messages for API call using instruction_to_use and processed_urls
+        logger.info(f"Final values before API call:")
+        logger.info(f"instruction_to_use: {instruction_to_use}")
+        logger.info(f"processed_urls: {processed_urls}")
+        logger.info(f"dialogue_count: {dialogue_count}")
         # This part runs for both new requests and retries
         model = tool_parameters.get("model", "gpt-4o-all")
         stream = bool(tool_parameters.get("stream", False) in ["True", "true", "TRUE", True])
@@ -379,14 +392,16 @@ Respond in JSON format with:
             logger.info("Full response content: %s", content)
 
             # Update conversation history AFTER receiving content (runs for both new and retry)
-
+            logger.info(f"Final processed_urls before saving with response: {processed_urls}")
+            
             # Reconstruct the entry to include the response
             history_entry_with_response = {
                 "dialogue_count": dialogue_count,
-                "instruction": instruction_to_use,  # Use the instruction that was actually sent
-                "image_urls": processed_urls,
-                "response_content": content,  # Add response content
+                "instruction": instruction_to_use,
+                "image_urls": processed_urls.copy(),  # 使用副本避免后续修改
+                "response_content": content,
             }
+            logger.info(f"Final history entry with response: {history_entry_with_response}")
             try:
                 # 只需要判断最后一条history
                 if history and history[-1]["dialogue_count"] == dialogue_count:
