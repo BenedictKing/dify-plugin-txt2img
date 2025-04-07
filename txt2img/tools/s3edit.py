@@ -175,7 +175,7 @@ class S3editTool(Tool):
                 self.session.storage.set(storage_key, json.dumps(history).encode())
             except Exception as init_error:
                 logger.error(f"Failed to initialize blank history: {init_error}")
-            logger.error(f"History lookup failed during retry check: {e}")
+                logger.error(f"History lookup failed during retry check: {e}")
 
         # Only process URLs and save initial history if it's NOT a retry
         if not is_retry:
@@ -263,6 +263,7 @@ Respond in JSON format with:
                 history = json.loads(existing_data.decode()) if existing_data else []
                 history.append(history_entry)
                 self.session.storage.set(storage_key, json.dumps(history).encode())
+                logger.info(f"history saved A: {history}")  # 每次读写都像这样记录下来，用于debug AI!
             except Exception as e:
                 logger.error(f"Failed to save initial conversation history: {e}")
 
@@ -346,6 +347,7 @@ Respond in JSON format with:
                     history.append(history_entry_with_response)
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
+                logger.info(f"history saved B: {history}")
             except Exception as e:
                 logger.error(f"Failed to update conversation history with response: {e}")
 
