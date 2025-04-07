@@ -227,13 +227,16 @@ class S3editTool(Tool):
    - **小幅调整**：如果是修改任务，可以根据用户的修改请求进行小幅调整，让用户的修改意图更为明确。
 
 **输入内容**：
-- **当前请求内容**： `{instruction_text}`
-- **相关历史记录**： `{json.dumps([entry for entry in history if entry.get("dialogue_count", 0) < dialogue_count], ensure_ascii=False)}`
+- **当前请求内容**： {instruction_text}
+- **相关历史记录**： {json.dumps([entry for entry in history if entry.get("dialogue_count", 0) < dialogue_count], ensure_ascii=False)}
 
 **输出格式**：
 ```json
-{"target_image_urls": ["图片URL"], "revised_instruction": "优化后的提示词"}
-```"""  # ERROR:tools.s3edit:History analysis failed: Invalid format specifier ' ["图片URL"], "revised_instruction": "优化后的提示词"' for object of type 'str' AI!
+{{
+  "target_image_urls": ["图片URL"], 
+  "revised_instruction": "优化后的提示词"
+}}
+```"""
                         logger.info(f"LLM analysis_prompt: {analysis_prompt}")
 
                         # 3. Call LLM for analysis
