@@ -260,14 +260,14 @@ Respond in JSON format with:
             try:
                 # Directly append new entry without checking existence
                 existing_data = self.session.storage.get(storage_key)
-                history = json.loads(existing_data.decode()) if existing_data else []
+                history = json.loads(existing_data.decode()) if existing_data else []  # 这里读取没有记录到日志中 AI!
                 history.append(history_entry)
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.debug(
                     "Conversation history updated [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
                     conversation_id,
                     dialogue_count,
-                    json.dumps(history, indent=2, ensure_ascii=False)
+                    json.dumps(history, indent=2, ensure_ascii=False),
                 )
             except Exception as e:
                 logger.error(f"Failed to save initial conversation history: {e}")
@@ -353,10 +353,10 @@ Respond in JSON format with:
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.debug(
-                    "Conversation history updated with response [conversation_id=%s, dialogue_count=%d]\nHistory content: %s", 
+                    "Conversation history updated with response [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
                     conversation_id,
                     dialogue_count,
-                    json.dumps(history, indent=2, ensure_ascii=False)
+                    json.dumps(history, indent=2, ensure_ascii=False),
                 )
             except Exception as e:
                 logger.error(f"Failed to update conversation history with response: {e}")
