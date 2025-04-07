@@ -318,19 +318,43 @@ Respond in JSON format with:
 
                 logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
 
-                # Check for existing entry with same dialogue_count
-                existing_index = -1
-                for index, entry in enumerate(history):
-                    if entry.get("dialogue_count") == dialogue_count:
-                        existing_index = index
-                        break
-
-                if existing_index != -1:
-                    logger.info(f"Updating existing entry for dialogue_count {dialogue_count}")
-                    history[existing_index] = history_entry
+                # 新增截断逻辑开始 -------------------------
+                if history:
+                    # 获取历史中最大的dialogue_count
+                    max_count = max(entry["dialogue_count"] for entry in history)
+                    
+                    # 如果当前count小于最大值，说明是重试之前的对话轮次
+                    if dialogue_count < max_count:
+                        logger.warning(
+                            "Truncating history after dialogue_count %d (current max=%d)",
+                            dialogue_count,
+                            max_count
+                        )
+                        # 保留所有小于等于当前count的条目
+                        filtered_history = [
+                            entry for entry in history
+                            if entry["dialogue_count"] <= dialogue_count
+                        ]
+                        # 删除旧条目后追加新条目
+                        filtered_history.append(history_entry)
+                        history = filtered_history
+                    else:
+                        # 正常更新/追加逻辑
+                        existing_index = next(
+                            (i for i, e in enumerate(history) 
+                            if e["dialogue_count"] == dialogue_count),
+                            -1
+                        )
+                        if existing_index != -1:
+                            logger.info(f"Updating existing entry for dialogue_count {dialogue_count}")
+                            history[existing_index] = history_entry
+                        else:
+                            logger.info(f"Appending new entry for dialogue_count {dialogue_count}")
+                            history.append(history_entry)
                 else:
-                    logger.info(f"Appending new entry for dialogue_count {dialogue_count}")
+                    # 历史为空时直接追加
                     history.append(history_entry)
+                # 新增截断逻辑结束 -------------------------
 
                 # Keep only last 10 entries
                 if len(history) > 10:
@@ -422,19 +446,43 @@ Respond in JSON format with:
                 logger.info("Initial storage check [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
                 history = json.loads(existing_data.decode()) if existing_data else []
 
-                # Check for existing entry with same dialogue_count
-                existing_index = -1
-                for index, entry in enumerate(history):
-                    if entry.get("dialogue_count") == dialogue_count:
-                        existing_index = index
-                        break
-
-                if existing_index != -1:
-                    logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
-                    history[existing_index] = history_entry_with_response
+                # 新增截断逻辑开始 -------------------------
+                if history:
+                    # 获取历史中最大的dialogue_count
+                    max_count = max(entry["dialogue_count"] for entry in history)
+                    
+                    # 如果当前count小于最大值，说明是重试之前的对话轮次
+                    if dialogue_count < max_count:
+                        logger.warning(
+                            "Truncating history after dialogue_count %d (current max=%d)",
+                            dialogue_count,
+                            max_count
+                        )
+                        # 保留所有小于等于当前count的条目
+                        filtered_history = [
+                            entry for entry in history
+                            if entry["dialogue_count"] <= dialogue_count
+                        ]
+                        # 删除旧条目后追加新条目
+                        filtered_history.append(history_entry_with_response)
+                        history = filtered_history
+                    else:
+                        # 正常更新/追加逻辑
+                        existing_index = next(
+                            (i for i, e in enumerate(history) 
+                            if e["dialogue_count"] == dialogue_count),
+                            -1
+                        )
+                        if existing_index != -1:
+                            logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
+                            history[existing_index] = history_entry_with_response
+                        else:
+                            logger.warning(f"History entry for dialogue_count {dialogue_count} not found, appending new entry")
+                            history.append(history_entry_with_response)
                 else:
-                    logger.warning(f"History entry for dialogue_count {dialogue_count} not found, appending new entry")
+                    # 历史为空时直接追加
                     history.append(history_entry_with_response)
+                # 新增截断逻辑结束 -------------------------
 
                 # Keep only last 10 entries
                 if len(history) > 10:
