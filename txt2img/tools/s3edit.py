@@ -13,7 +13,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from tos.exceptions import TosServerError
 from yarl import URL
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -251,7 +251,33 @@ Respond in JSON format with:
                             ).json()
 
                             # 4. Parse and apply results
-                            analysis = json.loads(analysis_response["choices"][0]["message"]["content"]) #这里可能出错 因为可能返回的格式是文本```json{"reference_round": 0,"target_image_urls": ["https://filesystem.site/cdn/20250407/DHfatNMp93cZzygqcvGvUt5PoP7sE3.png"],"revised_instruction": "画一只小狗在追蜜蜂"}``` AI!
+                            response_content = analysis_response["choices"][0]["message"]["content"]
+                            logger.debug(f"原始分析响应内容:\n{response_content}")
+
+                            try:
+                                # 尝试提取被```json包裹的JSON内容
+                                json_str = re.search(r'```json\s*({.*?})\s*```', response_content, re.DOTALL).group(1)
+                                analysis = json.loads(json_str)
+                            except (AttributeError, json.JSONDecodeError) as e:
+                                logger.warning(f"JSON解析失败，尝试解析原始内容。错误信息: {str(e)}")
+                                try:
+                                    # 回退方案：直接解析整个内容
+                                    analysis = json.loads(response_content)
+                                except json.JSONDecodeError:
+                                    logger.error("无法解析LLM分析结果，响应内容格式无效")
+                                    logger.error(f"无效的响应内容: {response_content}")
+                                    yield self.create_text_message("分析失败：服务返回格式异常")
+                                    return
+
+                            logger.debug(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
+
+                            # 验证必要字段
+                            required_keys = ["reference_round", "target_image_urls", "revised_instruction"]
+                            if not all(key in analysis for key in required_keys):
+                                missing = [key for key in required_keys if key not in analysis]
+                                logger.error(f"分析结果缺少必要字段: {missing}")
+                                yield self.create_text_message("分析失败：返回结果字段缺失")
+                                return
                             for entry in history:
                                 if entry["dialogue_count"] == analysis["reference_round"]:
                                     # Verify URLs exist in history and match user request
