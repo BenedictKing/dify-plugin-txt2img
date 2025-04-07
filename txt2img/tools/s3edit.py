@@ -163,36 +163,25 @@ class S3editTool(Tool):
             if existing_data:
                 logger.info("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
                 history = json.loads(existing_data.decode())
-                # 截断操作只需要在这里进行
-                if dialogue_count > 0:
-                    # Only keep entries with dialogue_count <= current count
-                    history = [entry for entry in history if entry.get("dialogue_count", 0) <= dialogue_count]
+                # Only keep entries with dialogue_count <= current count
+                history = [entry for entry in history if entry.get("dialogue_count", 0) <= dialogue_count]
                 logger.info("Loaded conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
+
+                # Find matching historical entry
+                for entry in history:
+                    if entry.get("dialogue_count") == dialogue_count:  # 经过截断的聊天记录只需要读取最后一条进行判断 AI!
+                        logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
+                        is_retry = True
+                        processed_urls = entry.get("image_urls", [])
+                        instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
+                        # If response content exists, we still re-request as per retry logic
+                        break  # Found the entry, no need to check further
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
         except Exception as e:
             logger.error(f"History initialization failed: {e}")
             history = []
-
-        # Find matching historical entry
-            for entry in history:
-                if entry.get("dialogue_count") == dialogue_count:
-                    logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
-                    is_retry = True
-                    processed_urls = entry.get("image_urls", [])
-                    instruction_to_use = entry.get("instruction", tool_parameters["instruction"])  # Use historical instruction
-                    # If response content exists, we still re-request as per retry logic
-                    break  # Found the entry, no need to check further
-        except Exception as e:
-            # 初始化空历史记录
-            try:
-                logger.warning("Initializing blank history for new conversation")
-                history = []
-                self.session.storage.set(storage_key, json.dumps(history).encode())
-            except Exception as init_error:
-                logger.error(f"Failed to initialize blank history: {init_error}")
-                logger.error(f"History lookup failed during retry check: {e}")
 
         # Only process URLs and save initial history if it's NOT a retry
         if not is_retry:
@@ -228,11 +217,11 @@ class S3editTool(Tool):
                     try:
                         # 1. Use already loaded history
                         # 2. Prepare LLM analysis prompt
-                            history_context = "\n".join(
-                                f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
-                                for entry in history
-                            )
-                            analysis_prompt = f"""Analyze conversation history to identify EXACTLY which images the user wants to modify:
+                        history_context = "\n".join(
+                            f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
+                            for entry in history
+                        )
+                        analysis_prompt = f"""Analyze conversation history to identify EXACTLY which images the user wants to modify:
 {history_context}
 
 Current request: {instruction_to_use}
@@ -242,50 +231,50 @@ Respond in JSON format with:
 2. target_image_urls: Array of image URLs to modify (MUST exist in history)
 3. revised_instruction: Revised prompt combining history and current request"""
 
-                            # 3. Call LLM for analysis
-                            analysis_response = requests.post(
-                                openai_url,
-                                headers={"Authorization": f"Bearer {openai_api_key}"},
-                                json={"model": "deepseek-v3", "messages": [{"role": "user", "content": analysis_prompt}], "temperature": 0.2},
-                            ).json()
+                        # 3. Call LLM for analysis
+                        analysis_response = requests.post(
+                            openai_url,
+                            headers={"Authorization": f"Bearer {openai_api_key}"},
+                            json={"model": "deepseek-v3", "messages": [{"role": "user", "content": analysis_prompt}], "temperature": 0.2},
+                        ).json()
 
-                            # 4. Parse and apply results
-                            response_content = analysis_response["choices"][0]["message"]["content"]
-                            logger.debug(f"原始分析响应内容:\n{response_content}")
+                        # 4. Parse and apply results
+                        response_content = analysis_response["choices"][0]["message"]["content"]
+                        logger.debug(f"原始分析响应内容:\n{response_content}")
 
+                        try:
+                            # 尝试提取被```json包裹的JSON内容
+                            json_str = re.search(r"```json\s*({.*?})\s*```", response_content, re.DOTALL).group(1)
+                            analysis = json.loads(json_str)
+                        except (AttributeError, json.JSONDecodeError) as e:
+                            logger.warning(f"JSON解析失败，尝试解析原始内容。错误信息: {str(e)}")
                             try:
-                                # 尝试提取被```json包裹的JSON内容
-                                json_str = re.search(r"```json\s*({.*?})\s*```", response_content, re.DOTALL).group(1)
-                                analysis = json.loads(json_str)
-                            except (AttributeError, json.JSONDecodeError) as e:
-                                logger.warning(f"JSON解析失败，尝试解析原始内容。错误信息: {str(e)}")
-                                try:
-                                    # 回退方案：直接解析整个内容
-                                    analysis = json.loads(response_content)
-                                except json.JSONDecodeError:
-                                    logger.error("无法解析LLM分析结果，响应内容格式无效")
-                                    logger.error(f"无效的响应内容: {response_content}")
-                                    yield self.create_text_message("分析失败：服务返回格式异常")
-                                    return
-
-                            logger.debug(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
-
-                            # 验证必要字段
-                            required_keys = ["reference_round", "target_image_urls", "revised_instruction"]
-                            if not all(key in analysis for key in required_keys):
-                                missing = [key for key in required_keys if key not in analysis]
-                                logger.error(f"分析结果缺少必要字段: {missing}")
-                                yield self.create_text_message("分析失败：返回结果字段缺失")
+                                # 回退方案：直接解析整个内容
+                                analysis = json.loads(response_content)
+                            except json.JSONDecodeError:
+                                logger.error("无法解析LLM分析结果，响应内容格式无效")
+                                logger.error(f"无效的响应内容: {response_content}")
+                                yield self.create_text_message("分析失败：服务返回格式异常")
                                 return
-                            for entry in history:
-                                if entry["dialogue_count"] == analysis["reference_round"]:
-                                    # Verify URLs exist in history and match user request
-                                    valid_urls = [url for url in analysis.get("target_image_urls", []) if url in entry.get("image_urls", [])]
-                                    processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
 
-                                    # Combine instructions with clear separation
-                                    instruction_to_use = f"{analysis['revised_instruction']}\n\n(修改要求: {instruction_to_use})"
-                                    break
+                        logger.debug(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
+
+                        # 验证必要字段
+                        required_keys = ["reference_round", "target_image_urls", "revised_instruction"]
+                        if not all(key in analysis for key in required_keys):
+                            missing = [key for key in required_keys if key not in analysis]
+                            logger.error(f"分析结果缺少必要字段: {missing}")
+                            yield self.create_text_message("分析失败：返回结果字段缺失")
+                            return
+                        for entry in history:
+                            if entry["dialogue_count"] == analysis["reference_round"]:
+                                # Verify URLs exist in history and match user request
+                                valid_urls = [url for url in analysis.get("target_image_urls", []) if url in entry.get("image_urls", [])]
+                                processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
+
+                                # Combine instructions with clear separation
+                                instruction_to_use = f"{analysis['revised_instruction']}\n\n(修改要求: {instruction_to_use})"
+                                break
 
                     except Exception as e:
                         logger.error(f"History analysis failed: {e}")
