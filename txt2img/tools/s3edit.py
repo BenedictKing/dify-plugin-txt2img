@@ -163,14 +163,12 @@ class S3editTool(Tool):
                 logger.info("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
                 history = json.loads(existing_data.decode())
                 logger.info(
-                    "Loaded conversation history [conversation_id=%s]\n%s",
-                    conversation_id,
-                    json.dumps(history, indent=2, ensure_ascii=False)
-                )
+                    "Loaded conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False)
+                )  # 截断操作只需要在这里进行 后面是不需要额外截断操作的 AI!
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
-            
+
             # Find matching historical entry
             for entry in history:
                 if entry.get("dialogue_count") == dialogue_count:
@@ -227,11 +225,7 @@ class S3editTool(Tool):
                         if existing_data:
                             logger.info("Loading analysis history [conversation_id=%s, exists=True]", conversation_id)
                             history = json.loads(existing_data.decode())
-                            logger.info(
-                                "Analysis history content [conversation_id=%s]\n%s",
-                                conversation_id,
-                                json.dumps(history, indent=2, ensure_ascii=False)
-                            )
+                            logger.info("Analysis history content [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
                         else:
                             logger.info("No analysis history found [conversation_id=%s]", conversation_id)
                             history = []
@@ -264,7 +258,7 @@ Respond in JSON format with:
 
                             try:
                                 # 尝试提取被```json包裹的JSON内容
-                                json_str = re.search(r'```json\s*({.*?})\s*```', response_content, re.DOTALL).group(1)
+                                json_str = re.search(r"```json\s*({.*?})\s*```", response_content, re.DOTALL).group(1)
                                 analysis = json.loads(json_str)
                             except (AttributeError, json.JSONDecodeError) as e:
                                 logger.warning(f"JSON解析失败，尝试解析原始内容。错误信息: {str(e)}")
@@ -322,29 +316,18 @@ Respond in JSON format with:
                 if history:
                     # 获取历史中最大的dialogue_count
                     max_count = max(entry["dialogue_count"] for entry in history)
-                    
+
                     # 如果当前count小于最大值，说明是重试之前的对话轮次
                     if dialogue_count < max_count:
-                        logger.warning(
-                            "Truncating history after dialogue_count %d (current max=%d)",
-                            dialogue_count,
-                            max_count
-                        )
+                        logger.warning("Truncating history after dialogue_count %d (current max=%d)", dialogue_count, max_count)
                         # 保留所有小于等于当前count的条目
-                        filtered_history = [
-                            entry for entry in history
-                            if entry["dialogue_count"] <= dialogue_count
-                        ]
+                        filtered_history = [entry for entry in history if entry["dialogue_count"] <= dialogue_count]
                         # 删除旧条目后追加新条目
                         filtered_history.append(history_entry)
                         history = filtered_history
                     else:
                         # 正常更新/追加逻辑
-                        existing_index = next(
-                            (i for i, e in enumerate(history) 
-                            if e["dialogue_count"] == dialogue_count),
-                            -1
-                        )
+                        existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)
                         if existing_index != -1:
                             logger.info(f"Updating existing entry for dialogue_count {dialogue_count}")
                             history[existing_index] = history_entry
@@ -359,18 +342,10 @@ Respond in JSON format with:
                 # Keep only last 10 entries
                 if len(history) > 10:
                     history = history[-10:]
-                    logger.info(
-                        "Truncated history [conversation_id=%s]\n%s",
-                        conversation_id,
-                        json.dumps(history[-10:], indent=2, ensure_ascii=False)
-                    )
+                    logger.info("Truncated history [conversation_id=%s]\n%s", conversation_id, json.dumps(history[-10:], indent=2, ensure_ascii=False))
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
-                logger.info(
-                    "Updated conversation history [conversation_id=%s]\n%s",
-                    conversation_id,
-                    json.dumps(history, indent=2, ensure_ascii=False)
-                )
+                logger.info("Updated conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
             except Exception as e:
                 logger.error(f"Failed to save initial conversation history: {e}")
 
@@ -450,29 +425,18 @@ Respond in JSON format with:
                 if history:
                     # 获取历史中最大的dialogue_count
                     max_count = max(entry["dialogue_count"] for entry in history)
-                    
+
                     # 如果当前count小于最大值，说明是重试之前的对话轮次
                     if dialogue_count < max_count:
-                        logger.warning(
-                            "Truncating history after dialogue_count %d (current max=%d)",
-                            dialogue_count,
-                            max_count
-                        )
+                        logger.warning("Truncating history after dialogue_count %d (current max=%d)", dialogue_count, max_count)
                         # 保留所有小于等于当前count的条目
-                        filtered_history = [
-                            entry for entry in history
-                            if entry["dialogue_count"] <= dialogue_count
-                        ]
+                        filtered_history = [entry for entry in history if entry["dialogue_count"] <= dialogue_count]
                         # 删除旧条目后追加新条目
                         filtered_history.append(history_entry_with_response)
                         history = filtered_history
                     else:
                         # 正常更新/追加逻辑
-                        existing_index = next(
-                            (i for i, e in enumerate(history) 
-                            if e["dialogue_count"] == dialogue_count),
-                            -1
-                        )
+                        existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)
                         if existing_index != -1:
                             logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
                             history[existing_index] = history_entry_with_response
@@ -490,11 +454,7 @@ Respond in JSON format with:
                     logger.info("Truncated history to last 10 entries")
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
-                logger.info(
-                    "Updated conversation history with response [conversation_id=%s]\n%s",
-                    conversation_id,
-                    json.dumps(history, indent=2, ensure_ascii=False)
-                )
+                logger.info("Updated conversation history with response [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
             except Exception as e:
                 logger.error(f"Failed to update conversation history with response: {e}")
 
