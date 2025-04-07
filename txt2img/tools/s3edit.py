@@ -166,9 +166,7 @@ class S3editTool(Tool):
                 if dialogue_count > 0:
                     # Only keep entries with dialogue_count <= current count
                     history = [entry for entry in history if entry.get("dialogue_count", 0) <= dialogue_count]
-                logger.info(
-                    "Loaded conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False)
-                )
+                logger.info("Loaded conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
