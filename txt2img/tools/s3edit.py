@@ -381,18 +381,13 @@ Respond in JSON format with:
                 "response_content": content,  # Add response content
             }
             try:
-                existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)
+                existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)  # 只需要判断最后一条history AI!
                 if existing_index != -1:
                     logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
                     history[existing_index] = history_entry_with_response
                 else:
                     logger.warning(f"History entry for dialogue_count {dialogue_count} not found, appending new entry")
                     history.append(history_entry_with_response)
-
-                # Keep only last 10 entries
-                if len(history) > 10:
-                    history = history[-10:]
-                    logger.info("Truncated history to last 10 entries")
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info("Updated conversation history with response [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
