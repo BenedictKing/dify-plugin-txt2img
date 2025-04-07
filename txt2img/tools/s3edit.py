@@ -160,7 +160,12 @@ class S3editTool(Tool):
         try:
             existing_data = self.session.storage.get(storage_key)
             if existing_data:
-                history = json.loads(existing_data.decode())  # 这里的读取都没有记录日志 AI!
+                logger.debug("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
+                history = json.loads(existing_data.decode())
+                logger.debug("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
+            else:
+                logger.debug("No existing history found [conversation_id=%s]", conversation_id)
+                history = []
                 # Find matching historical entry
                 for entry in history:
                     if entry.get("dialogue_count") == dialogue_count:
@@ -216,7 +221,12 @@ class S3editTool(Tool):
                         # 1. Get conversation history
                         existing_data = self.session.storage.get(storage_key)
                         if existing_data:
-                            history = json.loads(existing_data.decode())  # 这里的读取都没有记录日志 AI!
+                            logger.debug("Loading analysis history [conversation_id=%s, exists=True]", conversation_id)
+                            history = json.loads(existing_data.decode())
+                            logger.debug("Analysis history entries [conversation_id=%s, count=%d]", conversation_id, len(history))
+                        else:
+                            logger.debug("No analysis history found [conversation_id=%s]", conversation_id)
+                            history = []
 
                             # 2. Prepare LLM analysis prompt
                             history_context = "\n".join(
