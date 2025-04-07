@@ -160,7 +160,7 @@ class S3editTool(Tool):
         try:
             existing_data = self.session.storage.get(storage_key)
             if existing_data:
-                history = json.loads(existing_data.decode())
+                history = json.loads(existing_data.decode())  # 这里的读取都没有记录日志 AI!
                 # Find matching historical entry
                 for entry in history:
                     if entry.get("dialogue_count") == dialogue_count:
@@ -189,13 +189,8 @@ class S3editTool(Tool):
 
             uploaded_image_urls = [image.url for image in images] if images else []
             all_image_urls = list(dict.fromkeys(uploaded_image_urls + instruction_urls))
-            
-            logger.info(
-                "Processing image URLs [total=%d, uploaded=%d, from_instruction=%d]",
-                len(all_image_urls),
-                len(uploaded_image_urls), 
-                len(instruction_urls)
-            )
+
+            logger.info("Processing image URLs [total=%d, uploaded=%d, from_instruction=%d]", len(all_image_urls), len(uploaded_image_urls), len(instruction_urls))
             logger.debug("Full URL list: %s", [str(URL(url).host) for url in all_image_urls])
 
             current_processed_urls = []  # Use a temporary list for new processing
@@ -221,7 +216,7 @@ class S3editTool(Tool):
                         # 1. Get conversation history
                         existing_data = self.session.storage.get(storage_key)
                         if existing_data:
-                            history = json.loads(existing_data.decode())
+                            history = json.loads(existing_data.decode())  # 这里的读取都没有记录日志 AI!
 
                             # 2. Prepare LLM analysis prompt
                             history_context = "\n".join(
@@ -271,17 +266,9 @@ Respond in JSON format with:
             try:
                 # Directly append new entry without checking existence
                 existing_data = self.session.storage.get(storage_key)
-                logger.debug(
-                    "Loading conversation history [conversation_id=%s, exists=%s]",
-                    conversation_id,
-                    existing_data is not None
-                )
+                logger.debug("Loading conversation history [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
                 history = json.loads(existing_data.decode()) if existing_data else []
-                logger.debug(
-                    "History entries loaded [conversation_id=%s, count=%d]",
-                    conversation_id,
-                    len(history)
-                )
+                logger.debug("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
                 history.append(history_entry)
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.debug(
@@ -326,7 +313,7 @@ Respond in JSON format with:
                 # 如果是流式响应，需要拼接内容
                 for line in response.iter_lines():
                     if line:
-                        line_text = line.decode('utf-8')
+                        line_text = line.decode("utf-8")
                         logger.debug("Received streaming chunk: %s", line_text[:100])  # 记录前100字符
                     if line:
                         # 移除"data: "前缀并解析JSON
@@ -363,11 +350,7 @@ Respond in JSON format with:
             }
             try:
                 existing_data = self.session.storage.get(storage_key)
-                logger.debug(
-                    "Initial storage check [conversation_id=%s, exists=%s]",
-                    conversation_id,
-                    existing_data is not None
-                )
+                logger.debug("Initial storage check [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
                 history = json.loads(existing_data.decode()) if existing_data else []
 
                 updated = False
