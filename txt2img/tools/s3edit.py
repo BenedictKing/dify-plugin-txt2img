@@ -212,21 +212,11 @@ class S3editTool(Tool):
                     instruction_to_use = instruction_text  # 直接使用原始指令
                 else:
                     try:
-                        # 1. Use already loaded history
-                        # 2. Prepare LLM analysis prompt
-                        history_context = "\n".join(
-                            f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
-                            for entry in history
-                        )
-                        analysis_prompt = f"""Analyze conversation history to identify EXACTLY which images the user wants to modify:
-{history_context}
+                        analysis_prompt = f"""Analyze the current request and identify:
+1. target_image_urls: Array of image URLs to modify (extract from request if any)
+2. revised_instruction: Revised prompt combining history and current request
 
-Current request: {instruction_to_use}
-
-Respond in JSON format with:
-1. reference_round: The dialogue_count containing target images
-2. target_image_urls: Array of image URLs to modify (MUST exist in history)
-3. revised_instruction: Revised prompt combining history and current request"""
+Respond in JSON format with these two fields only."""
                         logger.info(f"LLM analysis_prompt: {analysis_prompt}")
 
                         # 3. Call LLM for analysis
@@ -253,7 +243,7 @@ Respond in JSON format with:
                             logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
 
                             # 验证必要字段
-                            required_keys = ["reference_round", "target_image_urls", "revised_instruction"]
+                            required_keys = ["target_image_urls", "revised_instruction"]
                             if not all(key in analysis for key in required_keys):
                                 missing = [key for key in required_keys if key not in analysis]
                                 logger.error(f"分析结果缺少必要字段: {missing}")
@@ -263,26 +253,9 @@ Respond in JSON format with:
                             # 确保target_image_urls是列表且不为空
                             if not isinstance(analysis.get("target_image_urls"), list):
                                 analysis["target_image_urls"] = []
-                                
-                            # 查找对应的历史记录
-                            logger.info(f"Searching history for reference_round={analysis['reference_round']}")
-                            found_entry = None
-                            for entry in history:
-                                if entry["dialogue_count"] == analysis["reference_round"]:
-                                    found_entry = entry
-                                    break
                             
-                            if not found_entry:
-                                logger.error(f"未找到对应的历史记录[reference_round={analysis['reference_round']}]")
-                                yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
-                                return
-                            
-                            # 优先使用LLM识别的URLs，但确保它们存在于历史记录中
-                            valid_urls = [
-                                url for url in analysis["target_image_urls"] 
-                                if url in found_entry.get("image_urls", [])
-                            ]
-                            processed_urls = valid_urls if valid_urls else found_entry.get("image_urls", [])
+                            # 直接使用LLM提取的URLs
+                            processed_urls = analysis["target_image_urls"]
                             instruction_to_use = analysis["revised_instruction"]
                             logger.info(f"Updated processed_urls from analysis: {processed_urls}")
                             logger.info(f"Updated instruction: {instruction_to_use}")
