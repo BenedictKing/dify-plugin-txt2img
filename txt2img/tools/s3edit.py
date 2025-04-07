@@ -242,37 +242,48 @@ Respond in JSON format with:
 
                         try:
                             # 尝试提取被```json包裹的JSON内容
-                            json_str = re.search(r"```json\s*({.*?})\s*```", response_content, re.DOTALL).group(1)
-                            analysis = json.loads(json_str)
-                        except (AttributeError, json.JSONDecodeError) as e:
-                            logger.warning(f"JSON解析失败，尝试解析原始内容。错误信息: {str(e)}")
-                            try:
-                                # 回退方案：直接解析整个内容
+                            json_match = re.search(r"```json\s*({.*?})\s*```", response_content, re.DOTALL)
+                            if json_match:
+                                json_str = json_match.group(1)
+                                analysis = json.loads(json_str)
+                            else:
+                                # 如果没有```json标记，尝试直接解析整个内容
                                 analysis = json.loads(response_content)
-                            except json.JSONDecodeError:
-                                logger.error("无法解析LLM分析结果，响应内容格式无效")
-                                logger.error(f"无效的响应内容: {response_content}")
-                                yield self.create_text_message("分析失败：服务返回格式异常")
+                                
+                            logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
+
+                            # 验证必要字段
+                            required_keys = ["reference_round", "target_image_urls", "revised_instruction"]
+                            if not all(key in analysis for key in required_keys):
+                                missing = [key for key in required_keys if key not in analysis]
+                                logger.error(f"分析结果缺少必要字段: {missing}")
+                                yield self.create_text_message("分析失败：返回结果字段缺失")
+                                return
+                                
+                            # 确保target_image_urls是列表且不为空
+                            if not isinstance(analysis.get("target_image_urls"), list):
+                                analysis["target_image_urls"] = []
+                                
+                            # 查找对应的历史记录
+                            for entry in history:
+                                if entry["dialogue_count"] == analysis["reference_round"]:
+                                    # 优先使用LLM识别的URLs，但确保它们存在于历史记录中
+                                    valid_urls = [
+                                        url for url in analysis["target_image_urls"] 
+                                        if url in entry.get("image_urls", [])
+                                    ]
+                                    processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
+                                    instruction_to_use = analysis["revised_instruction"]
+                                    break
+                            else:
+                                logger.error(f"未找到对应的历史记录[reference_round={analysis['reference_round']}]")
+                                yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
                                 return
 
-                        logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
-
-                        # 验证必要字段
-                        required_keys = ["reference_round", "target_image_urls", "revised_instruction"]
-                        if not all(key in analysis for key in required_keys):
-                            missing = [key for key in required_keys if key not in analysis]
-                            logger.error(f"分析结果缺少必要字段: {missing}")
-                            yield self.create_text_message("分析失败：返回结果字段缺失")
+                        except json.JSONDecodeError as e:
+                            logger.error(f"JSON解析失败: {e}\n原始内容: {response_content}")
+                            yield self.create_text_message("分析失败：服务返回格式异常")
                             return
-                        for entry in history:
-                            if entry["dialogue_count"] == analysis["reference_round"]:
-                                # Verify URLs exist in history and match user request
-                                valid_urls = [url for url in analysis.get("target_image_urls", []) if url in entry.get("image_urls", [])]
-                                processed_urls = valid_urls if valid_urls else entry.get("image_urls", [])
-
-                                # Combine instructions with clear separation
-                                instruction_to_use = f"{analysis['revised_instruction']}\n\n(修改要求: {instruction_to_use})"
-                                break
 
                     except Exception as e:
                         logger.error(f"History analysis failed: {e}")
