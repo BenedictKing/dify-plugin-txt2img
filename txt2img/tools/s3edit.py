@@ -381,10 +381,10 @@ Respond in JSON format with:
                 "response_content": content,  # Add response content
             }
             try:
-                existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)  # 只需要判断最后一条history AI!
-                if existing_index != -1:
+                # 只需要判断最后一条history
+                if history and history[-1]["dialogue_count"] == dialogue_count:
                     logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
-                    history[existing_index] = history_entry_with_response
+                    history[-1] = history_entry_with_response
                 else:
                     logger.warning(f"History entry for dialogue_count {dialogue_count} not found, appending new entry")
                     history.append(history_entry_with_response)
