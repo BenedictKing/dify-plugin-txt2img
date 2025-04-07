@@ -226,17 +226,8 @@ class S3editTool(Tool):
                     instruction_to_use = instruction_text  # 直接使用原始指令
                 else:
                     try:
-                        # 1. Get conversation history
-                        existing_data = self.session.storage.get(storage_key)
-                        if existing_data:
-                            logger.info("Loading analysis history [conversation_id=%s, exists=True]", conversation_id)
-                            history = json.loads(existing_data.decode())
-                            logger.info("Analysis history content [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
-                        else:
-                            logger.info("No analysis history found [conversation_id=%s]", conversation_id)
-                            history = []
-
-                            # 2. Prepare LLM analysis prompt
+                        # 1. Use already loaded history
+                        # 2. Prepare LLM analysis prompt
                             history_context = "\n".join(
                                 f"Round {entry['dialogue_count']} Instruction: {entry.get('instruction', '')} [Response: {entry.get('response_content', '')}] [Images: {len(entry.get('image_urls', []))}]"
                                 for entry in history
