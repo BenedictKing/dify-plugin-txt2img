@@ -212,11 +212,25 @@ class S3editTool(Tool):
                     instruction_to_use = instruction_text  # 直接使用原始指令
                 else:
                     try:
-                        analysis_prompt = f"""Analyze the current request and identify:
-1. target_image_urls: Array of image URLs to modify (extract from request if any)
-2. revised_instruction: Revised prompt combining history and current request
+                        analysis_prompt = f"""请分析当前修改请求并准确识别：
+1. 需要修改的目标图片URL列表（从历史记录或当前请求中提取）
+2. 结合历史记录和当前请求优化后的完整提示词
 
-Respond in JSON format with these two fields only."""  # 这个提示词质量不如之前的 AI!
+请严格按以下要求返回JSON格式：
+- 必须包含target_image_urls数组（即使为空）
+- revised_instruction应保留原始请求的核心意图
+- 若无法确定修改目标，target_image_urls应为空数组
+
+当前请求内容：{instruction_text}
+历史记录：{json.dumps(history[-3:], ensure_ascii=False) if history else '无'}
+
+返回格式示例：
+```json
+{{
+  "target_image_urls": ["图片URL1", "图片URL2"],
+  "revised_instruction": "优化后的完整提示词"
+}}
+```"""
                         logger.info(f"LLM analysis_prompt: {analysis_prompt}")
 
                         # 3. Call LLM for analysis
