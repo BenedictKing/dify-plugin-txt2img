@@ -281,28 +281,28 @@ Respond in JSON format with:
                 except json.JSONDecodeError:
                     logger.error("Invalid JSON data in storage, initializing new history")
                     history = []
-                
+
                 logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
-                
+
                 # Check for existing entry with same dialogue_count
                 existing_index = -1
                 for index, entry in enumerate(history):
                     if entry.get("dialogue_count") == dialogue_count:
                         existing_index = index
                         break
-                
+
                 if existing_index != -1:
                     logger.info(f"Updating existing entry for dialogue_count {dialogue_count}")
                     history[existing_index] = history_entry
                 else:
                     logger.info(f"Appending new entry for dialogue_count {dialogue_count}")
                     history.append(history_entry)
-                
+
                 # Keep only last 10 entries
                 if len(history) > 10:
                     history = history[-10:]
                     logger.info(f"Truncated history to last 10 entries")
-                
+
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info(
                     "Conversation history updated [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
@@ -367,10 +367,9 @@ Respond in JSON format with:
             else:
                 logger.info("Processing non-streaming response")
                 content = response.json()["choices"][0]["message"]["content"]
-                logger.info("Full response content: %s", content[:200])  # 记录前200字符
                 yield self.create_text_message(content)
 
-            logger.info(content)
+            logger.info("Full response content: %s", content)
 
             # Update conversation history AFTER receiving content (runs for both new and retry)
 
@@ -392,18 +391,18 @@ Respond in JSON format with:
                     if entry.get("dialogue_count") == dialogue_count:
                         existing_index = index
                         break
-                
+
                 if existing_index != -1:
                     logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
                     history[existing_index] = history_entry_with_response
                 else:
                     logger.warning(f"History entry for dialogue_count {dialogue_count} not found, appending new entry")
                     history.append(history_entry_with_response)
-                
+
                 # Keep only last 10 entries
                 if len(history) > 10:
                     history = history[-10:]
-                    logger.info(f"Truncated history to last 10 entries")
+                    logger.info("Truncated history to last 10 entries")
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info(
