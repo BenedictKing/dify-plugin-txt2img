@@ -211,7 +211,7 @@ class S3editTool(Tool):
                 if dialogue_count == 0:  # 新增判断条件
                     instruction_to_use = instruction_text  # 直接使用原始指令
                 else:
-                    try:
+                    try:  # 提示词应该是要求AI根据之前的聊天记录分析当前用户是要修改哪个图片，如果没有额外提及大概率都是最后一个 AI!
                         analysis_prompt = f"""请分析当前修改请求并准确识别：
 1. 需要修改的目标图片URL列表（从历史记录或当前请求中提取）
 2. 结合历史记录和当前请求优化后的完整提示词
@@ -222,7 +222,7 @@ class S3editTool(Tool):
 - 若无法确定修改目标，target_image_urls应为空数组
 
 当前请求内容：{instruction_text}
-历史记录：{json.dumps(history[-3:], ensure_ascii=False) if history else '无'}
+历史记录：{json.dumps(history[-3:], ensure_ascii=False) if history else "无"}
 
 返回格式示例：
 ```json
