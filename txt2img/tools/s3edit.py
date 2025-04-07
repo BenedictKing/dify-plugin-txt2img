@@ -157,6 +157,7 @@ class S3editTool(Tool):
         storage_key = f"s3edit_history_{conversation_id}"
         # Check for existing history entry for this specific dialogue_count at the beginning
 
+        history = []
         try:
             existing_data = self.session.storage.get(storage_key)
             if existing_data:
@@ -170,8 +171,11 @@ class S3editTool(Tool):
             else:
                 logger.info("No existing history found [conversation_id=%s]", conversation_id)
                 history = []
+        except Exception as e:
+            logger.error(f"History initialization failed: {e}")
+            history = []
 
-            # Find matching historical entry
+        # Find matching historical entry
             for entry in history:
                 if entry.get("dialogue_count") == dialogue_count:
                     logger.info(f"Retry detected for dialogue_count {dialogue_count}. Using historical data.")
@@ -400,10 +404,6 @@ Respond in JSON format with:
                 "response_content": content,  # Add response content
             }
             try:
-                existing_data = self.session.storage.get(storage_key)
-                logger.info("Initial storage check [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
-                history = json.loads(existing_data.decode()) if existing_data else []
-
                 existing_index = next((i for i, e in enumerate(history) if e["dialogue_count"] == dialogue_count), -1)
                 if existing_index != -1:
                     logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
