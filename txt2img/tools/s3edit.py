@@ -274,12 +274,35 @@ Respond in JSON format with:
                 "image_urls": processed_urls,
             }
             try:
-                # Directly append new entry without checking existence
                 existing_data = self.session.storage.get(storage_key)
                 logger.info("Loading conversation history [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
-                history = json.loads(existing_data.decode()) if existing_data else []
+                try:
+                    history = json.loads(existing_data.decode()) if existing_data else []
+                except json.JSONDecodeError:
+                    logger.error("Invalid JSON data in storage, initializing new history")
+                    history = []
+                
                 logger.info("History entries loaded [conversation_id=%s, count=%d]", conversation_id, len(history))
-                history.append(history_entry)
+                
+                # Check for existing entry with same dialogue_count
+                existing_index = -1
+                for index, entry in enumerate(history):
+                    if entry.get("dialogue_count") == dialogue_count:
+                        existing_index = index
+                        break
+                
+                if existing_index != -1:
+                    logger.info(f"Updating existing entry for dialogue_count {dialogue_count}")
+                    history[existing_index] = history_entry
+                else:
+                    logger.info(f"Appending new entry for dialogue_count {dialogue_count}")
+                    history.append(history_entry)
+                
+                # Keep only last 10 entries
+                if len(history) > 10:
+                    history = history[-10:]
+                    logger.info(f"Truncated history to last 10 entries")
+                
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info(
                     "Conversation history updated [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
@@ -363,16 +386,24 @@ Respond in JSON format with:
                 logger.info("Initial storage check [conversation_id=%s, exists=%s]", conversation_id, existing_data is not None)
                 history = json.loads(existing_data.decode()) if existing_data else []
 
-                updated = False
-                for i, entry in enumerate(history):
+                # Check for existing entry with same dialogue_count
+                existing_index = -1
+                for index, entry in enumerate(history):
                     if entry.get("dialogue_count") == dialogue_count:
-                        history[i] = history_entry_with_response  # Update with response
-                        updated = True
+                        existing_index = index
                         break
-                if not updated:
-                    # Should not happen if initial save worked or if it was a retry, but as fallback:
-                    logger.warning(f"History entry for dialogue_count {dialogue_count} not found for final update, appending.")
+                
+                if existing_index != -1:
+                    logger.info(f"Updating existing entry for dialogue_count {dialogue_count} with response")
+                    history[existing_index] = history_entry_with_response
+                else:
+                    logger.warning(f"History entry for dialogue_count {dialogue_count} not found, appending new entry")
                     history.append(history_entry_with_response)
+                
+                # Keep only last 10 entries
+                if len(history) > 10:
+                    history = history[-10:]
+                    logger.info(f"Truncated history to last 10 entries")
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info(
