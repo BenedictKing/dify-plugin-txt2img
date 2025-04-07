@@ -260,7 +260,17 @@ Respond in JSON format with:
             try:
                 # Directly append new entry without checking existence
                 existing_data = self.session.storage.get(storage_key)
-                history = json.loads(existing_data.decode()) if existing_data else []  # 这里读取没有记录到日志中 AI!
+                logger.debug(
+                    "Loading conversation history [conversation_id=%s, exists=%s]",
+                    conversation_id,
+                    existing_data is not None
+                )
+                history = json.loads(existing_data.decode()) if existing_data else []
+                logger.debug(
+                    "History entries loaded [conversation_id=%s, count=%d]",
+                    conversation_id,
+                    len(history)
+                )
                 history.append(history_entry)
                 self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.debug(
