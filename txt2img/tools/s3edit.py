@@ -13,7 +13,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from tos.exceptions import TosServerError
 from yarl import URL
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -263,7 +263,12 @@ Respond in JSON format with:
                 history = json.loads(existing_data.decode()) if existing_data else []
                 history.append(history_entry)
                 self.session.storage.set(storage_key, json.dumps(history).encode())
-                logger.info(f"history saved A: {history}")  # 每次读写都像这样记录下来，用于debug AI!
+                logger.debug(
+                    "Conversation history updated [conversation_id=%s, dialogue_count=%d]\nHistory content: %s",
+                    conversation_id,
+                    dialogue_count,
+                    json.dumps(history, indent=2, ensure_ascii=False)
+                )
             except Exception as e:
                 logger.error(f"Failed to save initial conversation history: {e}")
 
@@ -347,7 +352,12 @@ Respond in JSON format with:
                     history.append(history_entry_with_response)
 
                 self.session.storage.set(storage_key, json.dumps(history).encode())
-                logger.info(f"history saved B: {history}")
+                logger.debug(
+                    "Conversation history updated with response [conversation_id=%s, dialogue_count=%d]\nHistory content: %s", 
+                    conversation_id,
+                    dialogue_count,
+                    json.dumps(history, indent=2, ensure_ascii=False)
+                )
             except Exception as e:
                 logger.error(f"Failed to update conversation history with response: {e}")
 
