@@ -168,6 +168,7 @@ class S3editTool(Tool):
                         # If response content exists, we still re-request as per retry logic
                         break  # Found the entry, no need to check further
         except Exception as e:
+            # 如果没找到应该创建空白的数据保存，方便后面的逻辑使用 AI!
             logger.error(f"History lookup failed during retry check: {e}")
 
         # Only process URLs and save initial history if it's NOT a retry
@@ -290,7 +291,7 @@ Respond in JSON format with:
             if stream:
                 # 如果是流式响应，需要拼接内容
                 for line in response.iter_lines():
-                    logger.info(line)
+                    # logger.info(line)
                     if line:
                         # 移除"data: "前缀并解析JSON
                         line_text = line.decode("utf-8")
