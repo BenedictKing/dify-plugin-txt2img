@@ -164,7 +164,10 @@ class S3editTool(Tool):
                 logger.info("Loading conversation history [conversation_id=%s, exists=True]", conversation_id)
                 history = json.loads(existing_data.decode())
                 # Only keep entries with dialogue_count <= current count
+                lens = len(history)
                 history = [entry for entry in history if entry.get("dialogue_count", 0) <= dialogue_count]
+                if len(history) < lens:
+                    self.session.storage.set(storage_key, json.dumps(history).encode())
                 logger.info("Loaded conversation history [conversation_id=%s]\n%s", conversation_id, json.dumps(history, indent=2, ensure_ascii=False))
 
                 # Check only the last entry after truncation
@@ -207,88 +210,92 @@ class S3editTool(Tool):
             instruction_to_use = instruction_text  # Ensure instruction_to_use reflects the current input
 
             # Handle case where no new URLs were processed (user modifying previous request)
-            if not processed_urls:
-                if dialogue_count == 0:  # 新增判断条件
-                    instruction_to_use = instruction_text  # 直接使用原始指令
-                else:
-                    try:
-                        analysis_prompt = f"""
-**任务描述**：根据用户的聊天历史记录，分析用户当前的绘画任务是创建新图还是修改之前的结果。如果是创建新图，则输出用户的原始请求内容和空的图片URL数组；如果是修改，则输出小幅调整的请求内容和相关图片URL数组。
+            if dialogue_count == 0:  # 新增判断条件
+                instruction_to_use = instruction_text  # 直接使用原始指令
+            else:
+                try:
+                    analysis_prompt = f"""
+任务描述: 
+根据用户的聊天历史记录，分析用户当前的绘画任务是创建新图还是修改之前的结果。
+如果是创建新图，则输出用户的原始请求内容和空的图片URL数组;
+如果是修改，则输出最多小幅调整的请求内容和相关图片URL数组，
+注意如果用户同时提供了新的图片，则输出的图片URL数组首先要包含历史记录中的最符合用户要求的图片URL，再附加上用户新提供的图片URL;
 
-**分析步骤**：
+分析步骤: 
 
-1. **目标图片URL的确定**：
-   - **明确指定的图片**：优先使用用户明确指定的图片URL。
-   - **默认使用最近生成的图片**：如果用户没有明确指定，则使用历史记录中的最后一个图片URL作为默认值。
-   - **无可用图片**：如果完全没有可用的图片URL，则返回空数组。
+1. 目标图片URL的确定: 
+- 明确指定的图片: 优先使用用户明确指定的图片URL。
+- 默认使用最近生成的图片: 如果用户没有明确指定，则使用历史记录中的最后一个图片URL作为默认值。
+- 无可用图片: 如果完全没有可用的图片URL，则返回空数组。
 
-2. **优化后的提示词**：
-   - **保留原始意图**：确保优化后的提示词清晰明确，并保留用户原始的绘画意图。
-   - **小幅调整**：如果是修改任务，可以根据用户的修改请求进行小幅调整，让用户的修改意图更为明确。
+2. 优化后的提示词: 
+- 保留原始意图: 确保优化后的提示词清晰明确，并保留用户原始的绘画意图。
+- 小幅调整: 如果是修改任务，可以根据用户的修改请求进行小幅调整，让用户的修改意图更为明确。
 
-**输入内容**：
-- **当前请求内容**： {instruction_text}
-- **相关历史记录**： {json.dumps([entry for entry in history if entry.get("dialogue_count", 0) < dialogue_count], ensure_ascii=False)}
+输入内容: 
+- 当前请求内容:  {instruction_text}
+- 当前用户提供的图片URL: {processed_urls}
+- 相关历史记录:  {json.dumps([entry for entry in history if entry.get("dialogue_count", 0) < dialogue_count], ensure_ascii=False)}
 
-**输出格式**：
+输出格式: 
 ```json
 {{
-  "target_image_urls": ["图片URL"], 
-  "revised_instruction": "优化后的提示词"
+"target_image_urls": ["图片URL"], 
+"revised_instruction": "优化后的提示词"
 }}
 ```"""
-                        logger.info(f"LLM analysis_prompt: {analysis_prompt}")
+                    logger.info(f"LLM analysis_prompt: {analysis_prompt}")
 
-                        # 3. Call LLM for analysis
-                        analysis_response = requests.post(
-                            openai_url,
-                            headers={"Authorization": f"Bearer {openai_api_key}"},
-                            json={"model": "deepseek-v3", "messages": [{"role": "user", "content": analysis_prompt}], "temperature": 0.2},
-                        ).json()
+                    # 3. Call LLM for analysis
+                    analysis_response = requests.post(
+                        openai_url,
+                        headers={"Authorization": f"Bearer {openai_api_key}"},
+                        json={"model": "deepseek-v3", "messages": [{"role": "user", "content": analysis_prompt}], "temperature": 0.2},
+                    ).json()
 
-                        # 4. Parse and apply results
-                        response_content = analysis_response["choices"][0]["message"]["content"]
-                        logger.info(f"原始分析响应内容:\n{response_content}")
+                    # 4. Parse and apply results
+                    response_content = analysis_response["choices"][0]["message"]["content"]
+                    logger.info(f"原始分析响应内容:\n{response_content}")
 
-                        try:
-                            # 尝试提取被```json包裹的JSON内容
-                            json_match = re.search(r"```json\s*({.*?})\s*```", response_content, re.DOTALL)
-                            if json_match:
-                                json_str = json_match.group(1)
-                                analysis = json.loads(json_str)
-                            else:
-                                # 如果没有```json标记，尝试直接解析整个内容
-                                analysis = json.loads(response_content)
+                    try:
+                        # 尝试提取被```json包裹的JSON内容
+                        json_match = re.search(r"```json\s*({.*?})\s*```", response_content, re.DOTALL)
+                        if json_match:
+                            json_str = json_match.group(1)
+                            analysis = json.loads(json_str)
+                        else:
+                            # 如果没有```json标记，尝试直接解析整个内容
+                            analysis = json.loads(response_content)
 
-                            logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
+                        logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
 
-                            # 验证必要字段
-                            required_keys = ["target_image_urls", "revised_instruction"]
-                            if not all(key in analysis for key in required_keys):
-                                missing = [key for key in required_keys if key not in analysis]
-                                logger.error(f"分析结果缺少必要字段: {missing}")
-                                yield self.create_text_message("分析失败：返回结果字段缺失")
-                                return
-
-                            # 确保target_image_urls是列表且不为空
-                            if not isinstance(analysis.get("target_image_urls"), list):
-                                analysis["target_image_urls"] = []
-
-                            # 直接使用LLM提取的URLs
-                            processed_urls = analysis["target_image_urls"]
-                            instruction_to_use = analysis["revised_instruction"]
-                            logger.info(f"Updated processed_urls from analysis: {processed_urls}")
-                            logger.info(f"Updated instruction: {instruction_to_use}")
-
-                        except json.JSONDecodeError as e:
-                            logger.error(f"JSON解析失败: {e}\n原始内容: {response_content}")
-                            yield self.create_text_message("分析失败：服务返回格式异常")
+                        # 验证必要字段
+                        required_keys = ["target_image_urls", "revised_instruction"]
+                        if not all(key in analysis for key in required_keys):
+                            missing = [key for key in required_keys if key not in analysis]
+                            logger.error(f"分析结果缺少必要字段: {missing}")
+                            yield self.create_text_message("分析失败: 返回结果字段缺失")
                             return
 
-                    except Exception as e:
-                        logger.error(f"History analysis failed: {e}")
-                        yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
+                        # 确保target_image_urls是列表且不为空
+                        if not isinstance(analysis.get("target_image_urls"), list):
+                            analysis["target_image_urls"] = []
+
+                        # 直接使用LLM提取的URLs
+                        processed_urls = analysis["target_image_urls"]
+                        instruction_to_use = analysis["revised_instruction"]
+                        logger.info(f"Updated processed_urls from analysis: {processed_urls}")
+                        logger.info(f"Updated instruction: {instruction_to_use}")
+
+                    except json.JSONDecodeError as e:
+                        logger.error(f"JSON解析失败: {e}\n原始内容: {response_content}")
+                        yield self.create_text_message("分析失败: 服务返回格式异常")
                         return
+
+                except Exception as e:
+                    logger.error(f"History analysis failed: {e}")
+                    yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
+                    return
 
             # 2. Store initial conversation history (only if not a retry)
             logger.info(f"Preparing to save history - current processed_urls: {processed_urls}")
