@@ -330,7 +330,7 @@ class S3editTool(Tool):
                 logger.error(f"Failed to save initial conversation history: {e}")
 
         # Prepare messages for API call using instruction_to_use and processed_urls
-        logger.info(f"Final values before API call:")
+        logger.info("Final values before API call:")
         logger.info(f"instruction_to_use: {instruction_to_use}")
         logger.info(f"processed_urls: {processed_urls}")
         logger.info(f"dialogue_count: {dialogue_count}")
