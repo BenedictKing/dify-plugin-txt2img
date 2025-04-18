@@ -216,21 +216,21 @@ class S3editTool(Tool):
                 try:
                     analysis_prompt = f"""
 任务描述: 
-根据用户的聊天历史记录，分析用户当前的绘画任务是创建新图还是修改之前的结果。
-如果是创建新图，则输出用户的原始请求内容和空的图片URL数组;
-如果是修改，则输出最多小幅调整的请求内容和相关图片URL数组，
-注意如果用户同时提供了新的图片，则输出的图片URL数组首先要包含历史记录中的最符合用户要求的图片URL，再附加上用户新提供的图片URL;
+根据用户的聊天历史记录, 分析用户当前的绘画任务是创建新图还是修改之前的结果。
+如果是创建新图, 则输出用户的原始请求内容和空的图片URL数组;
+如果是修改, 则输出最多小幅调整的请求内容和相关图片URL数组, 
+注意如果用户同时提供了新的图片, 则输出的图片URL数组首先要包含历史记录中的最符合用户要求的图片URL, 再附加上用户新提供的图片URL;
 
 分析步骤: 
 
 1. 目标图片URL的确定: 
 - 明确指定的图片: 优先使用用户明确指定的图片URL。
-- 默认使用最近生成的图片: 如果用户没有明确指定，则使用历史记录中的最后一个图片URL作为默认值。
-- 无可用图片: 如果完全没有可用的图片URL，则返回空数组。
+- 默认使用最近生成的图片: 如果用户没有明确指定, 则使用历史记录中的最后一个图片URL作为默认值。
+- 无可用图片: 如果完全没有可用的图片URL, 则返回空数组。
 
 2. 优化后的提示词: 
-- 保留原始意图: 确保优化后的提示词清晰明确，并保留用户原始的绘画意图。
-- 小幅调整: 如果是修改任务，可以根据用户的修改请求进行小幅调整，让用户的修改意图更为明确。
+- 保留原始意图: 确保优化后的提示词清晰明确, 并保留用户原始的绘画意图。
+- 小幅调整: 如果是修改任务, 可以根据用户的修改请求进行小幅调整, 让用户的修改意图更为明确。
 
 输入内容: 
 - 当前请求内容:  {instruction_text}
@@ -264,7 +264,7 @@ class S3editTool(Tool):
                             json_str = json_match.group(1)
                             analysis = json.loads(json_str)
                         else:
-                            # 如果没有```json标记，尝试直接解析整个内容
+                            # 如果没有```json标记, 尝试直接解析整个内容
                             analysis = json.loads(response_content)
 
                         logger.info(f"解析后的分析结果: {json.dumps(analysis, ensure_ascii=False)}")
@@ -294,7 +294,7 @@ class S3editTool(Tool):
 
                 except Exception as e:
                     logger.error(f"History analysis failed: {e}")
-                    yield self.create_text_message("无法定位历史图片，请明确指定需要修改的图片")
+                    yield self.create_text_message("无法定位历史图片, 请明确指定需要修改的图片")
                     return
 
             # 2. Store initial conversation history (only if not a retry)
@@ -363,7 +363,7 @@ class S3editTool(Tool):
             content = ""
             if stream:
                 logger.info("Starting to process streaming response")
-                # 如果是流式响应，需要拼接内容
+                # 如果是流式响应, 需要拼接内容
                 for line in response.iter_lines():
                     if line:
                         line_text = line.decode("utf-8")
@@ -430,12 +430,12 @@ class S3editTool(Tool):
                         yield self.create_blob_message(blob=response.content, meta={"mime_type": content_type})
                     except Exception as e:
                         logger.error(f"Failed to process image URL: {e}")
-                        yield self.create_text_message("\n\n图片处理失败，请尝试重新生成")
+                        yield self.create_text_message("\n\n图片处理失败, 请尝试重新生成")
                 else:
                     yield self.create_image_message(last_url)
                 return
 
-            yield self.create_text_message("\n\n当前流量限制，请稍后再试")
+            yield self.create_text_message("\n\n当前流量限制, 请稍后再试")
 
         except Exception as e:
             raise BaseException(f"API Error: {str(e)}")
